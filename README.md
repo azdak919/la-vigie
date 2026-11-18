@@ -1,0 +1,212 @@
+# LE KIOSQUE
+
+> *Kit d'Infrastructure Ouverte, Souveraine et de Qualité pour les Usages Éditoriaux.*
+>
+> **« Publier aujourd'hui. Transmettre demain. »**
+
+Socle libre pour les journaux étudiants, les médias de campus et les équipes
+éditoriales. Conçu pour survivre à ses fondateurs.
+
+**LE-RADAR** est l'agrégateur et le réseau de découverte des médias étudiants.
+**LE KIOSQUE** est le kit qui permet d'en créer un. Deux projets distincts : un
+journal sous LE KIOSQUE reste propriétaire de son domaine, de son hébergement,
+de ses comptes et de ses contenus.
+
+Un journal étudiant ne meurt presque jamais par manque de talent. Il meurt parce
+que le domaine a expiré, que l'hébergement n'est plus payé, que le compte
+d'administration appartient à quelqu'un qui a gradué, et que dix ans d'archives
+sont partis avec.
+
+Le Kiosque est une réponse à ce problème-là — pas à celui de fabriquer un joli
+site, qui est le problème facile.
+
+> **Agents et personnes qui reprennent le projet :** lire
+> **[`AGENTS.md`](AGENTS.md)** (architecture, invariants, pièges déjà payés)
+> puis la section **« Registre officiel de livraison »** de
+> **[`AGENTS.md`](AGENTS.md)** (mission en cours et décisions de continuité).
+
+**Démo en ligne : <https://azdak919.github.io/le-kiosque/>.**
+
+**État : jalon 4 livré, démonstration locale (sql.js).** La vitrine, Le Quorum, le configurateur
+et une interface de rédaction persistante dans le navigateur fonctionnent sans
+compte ni serveur. Voir la [feuille de route](#feuille-de-route).
+
+---
+
+## Le principe
+
+> **La génération du site ne parle jamais au CMS.**
+> Seule l'étape `sync` le fait. Le CMS alimente un miroir portable dans Git ; le
+> site se construit *uniquement* depuis ce miroir.
+
+```
+CMS au choix ──sync──► content/*.md + media/ ──build──► site statique
+(peut mourir)          (l'archive, dans Git)           (ne meurt pas)
+```
+
+Un backend qui meurt casse l'écriture, **jamais** la lecture. Tout le reste du
+projet découle de cette seule frontière :
+
+- **Vous n'êtes prisonnier de rien.** Markdown/Git aujourd'hui ; l'interface
+  `ContentSource` est prévue pour WordPress, Ghost ou Drupal (jalon 5, pas
+  encore disponible). Le site ne change pas.
+- **Le site ne peut pas se vider tout seul.** Un quota dépassé ou un jeton
+  expiré fait échouer `sync` bruyamment — le site publié reste intact.
+- **Les archives sont récupérables sans rien.** Du Markdown et des images dans
+  Git. `npm ci && kiosque build` reconstruit tout, sans aucun compte ni secret.
+- **Trois ans de sommeil ne cassent rien.** Le site est statique : il n'y a
+  rien à redémarrer.
+
+---
+
+## Démarrer
+
+**Équipe étudiante : suivez [`docs/guide-etudiant.md`](docs/guide-etudiant.md).**
+C'est le chemin recommandé, de bout en bout et sans terminal : « Use this
+template », le configurateur, la rédaction (le socle) sur un hébergement PHP
+ordinaire — serveur du cégep ou hébergeur mutualisé —, puis le site public
+sur GitHub Pages. Cloudflare reste possible, mais demande la ligne de commande
+(voir la section 10 du guide).
+
+Sans hébergement du tout, le journal peut vivre seulement dans GitHub, en
+Markdown : [`docs/installation.md`](docs/installation.md).
+
+Pour travailler sur le code :
+
+```bash
+git clone https://github.com/<votre-organisation>/<votre-journal>.git
+cd <votre-journal>
+npm ci
+
+node packages/pipeline/src/cli.ts sync
+node packages/pipeline/src/cli.ts build
+```
+
+Diagnostic et passation : `kiosque doctor`, `kiosque adopt` (écrit
+`PASSATION.md`), `kiosque export` (archive portable) et `kiosque deploy-hint`.
+
+Servi dans un sous-dossier hors GitHub Pages ? Renseignez-le, sinon les liens
+pointent à côté :
+
+```ts
+// kiosque.config.ts
+deploy: { basePath: '/<depot>' }   // laisser vide avec un domaine dédié
+```
+
+**Deux fichiers à éditer, pas plus :**
+
+| Fichier | Rôle |
+|---|---|
+| `theme/tokens.css` | vos couleurs, votre typographie |
+| `kiosque.config.ts` | votre backend, votre déploiement |
+
+**Trois fichiers à lire :** [`AJOUTER-UN-ARTICLE.md`](template/AJOUTER-UN-ARTICLE.md) ·
+[`OWNERS.md`](template/OWNERS.md) · [`RESTAURATION.md`](template/RESTAURATION.md)
+
+**Pour que votre équipe écrive sans jamais voir Git :**
+[`docs/brancher-sveltia.md`](docs/brancher-sveltia.md)
+
+**Installer chez un journal depuis une clé USB** (hébergeur mutualisé, serveur,
+à côté d’un WordPress) : `npm run kit`, puis voir
+[`tools/kit/GUIDE.md`](tools/kit/GUIDE.md) et la
+[fiche à imprimer](tools/kit/FICHE-A-IMPRIMER.html).
+
+**Pour essayer sans compte, jeton ni terminal :** terminez le configurateur,
+puis ouvrez `/admin/`. Le [mode de démonstration local](docs/demo-local.md)
+conserve les données uniquement dans IndexedDB, dans ce navigateur.
+
+---
+
+## Mises à jour de la plateforme
+
+Personne ne peut écrire dans votre dépôt — pas même nous. Le workflow
+`maj-plateforme.yml` va chercher les améliorations en amont et vous les **propose
+en pull request**. Vous mergez, ou vous ignorez.
+
+Ça reste sans conflit parce que la frontière est stricte :
+
+```
+À VOUS, jamais touché par l'amont
+  content/  media/  theme/tokens.css  kiosque.config.ts  OWNERS.md
+
+À LA PLATEFORME, ne pas modifier à la main
+  packages/  tools/  .github/workflows/
+```
+
+---
+
+## Structure
+
+```
+packages/
+  core/            modèle commun + contrats — zéro dépendance
+  adapters/
+    markdown/      adaptateur de référence
+    wordpress/     squelette non branché (jalon 5)
+  pipeline/        sync · build · verify · cms:config
+  theme-radar/     identité éditoriale : jetons + gabarits
+template/          ce que vous éditez
+examples/          journal de démonstration
+docs/              guides
+```
+
+Deux dépendances de production (`yaml`, `marked`), aucune étape de compilation :
+Node exécute le TypeScript directement. Chaque dépendance est une dette de
+survie. Playwright est verrouillé comme dépendance de développement, pour les
+tests. La base de la démonstration locale (sql.js) arrive avec l’admin du socle.
+
+---
+
+## Feuille de route
+
+| Jalon | Contenu | État |
+|---|---|---|
+| **1** | Noyau, adaptateur Markdown, thème, chaîne complète, test de continuité | **fait** |
+| **2** | Sveltia CMS, statut éditorial, identifiants permanents | **fait** |
+| **3** | Vitrine, Le Quorum, configurateur et barre radio LE-RADAR | **fait** |
+| **Démo locale** | SQLite (sql.js), administration navigateur, import/export et front vivant | **fait** |
+| **4** | `doctor`, `adopt` (PASSATION.md), `export`, `deploy-hint` | **fait** |
+| 5 | Adaptateur WordPress/Newspack | à venir |
+| 6 | Premier pilote avec une vraie équipe | à venir |
+
+---
+
+## Ce que Le Kiosque fournit — et ce qu'il ne fournit pas
+
+**Disponible aujourd’hui :** le code libre, le gabarit Markdown/Git, la vitrine,
+Le Quorum, le configurateur et la démonstration éditoriale locale, la page
+Mise à jour (lignes Socle et Kiosque), l’adaptateur socle éteint dans le gabarit,
+la documentation d'installation et de reprise, les guides de passation, la
+procédure de restauration et la barre radio facultative. Les autres backends
+et outils de migration restent une feuille de route.
+
+**Chaque journal demeure responsable de :** son hébergement, son domaine, ses
+comptes d'administration, ses sauvegardes, sa sécurité, ses dépenses, et la
+gestion et la publication de son contenu.
+
+**Le Kiosque et LE-RADAR n'hébergent pas les sites.** Le projet est expérimental
+et développé avec des ressources limitées. Il ne garantit aucune infrastructure,
+maintenance permanente, niveau de service ni service commercial.
+L'accompagnement est bénévole et offert selon les disponibilités.
+
+L'architecture laisse la porte ouverte à des partenariats, des services payants
+facultatifs ou une coopérative — **sans qu'aucun journal ne devienne dépendant
+du Kiosque pour conserver ou migrer ses contenus.** Le référencement dans
+l'annuaire signifie seulement que LE-RADAR lit un flux RSS public et conserve
+les métadonnées nécessaires à l'agrégation.
+
+---
+
+## Licence
+
+**GNU GPL v2** ([`LICENSE`](LICENSE)), comme
+[LE-RADAR](https://github.com/azdak919/le-radar), dont ce projet reprend
+l'identité visuelle (valeurs **copiées** dans
+`packages/theme-radar/assets/tokens.css`, pas liées — chaque projet garde sa
+liberté d'évoluer).
+
+Sveltia CMS est redistribué sous licence MIT
+(`packages/theme-radar/assets/admin/SVELTIA-LICENSE.txt`).
+
+Les contenus publiés par chaque journal appartiennent à leurs autrices et
+auteurs.

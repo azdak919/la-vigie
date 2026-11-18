@@ -1,0 +1,76 @@
+# Carte d'identité du journal. Le premier fichier à remplir,
+# et le seul à relire à chaque passation.
+
+slug: mon-journal
+name: Mon Journal
+tagline: Le journal étudiant du Cégep de ...
+institution: Cégep de ...
+institutionType: cegep      # cegep | universite | autre
+region: ...
+lang: fr-CA
+
+# Sans barre oblique finale. Avec un fork GitHub Pages :
+# https://mon-organisation.github.io/mon-journal
+siteUrl: https://journal-exemple.invalid
+timeZone: America/Toronto
+
+theme:
+  # La couleur officielle de votre établissement.
+  # Voir brand-colors.json de LE-RADAR.
+  accent: '#6c2163'
+  # Version éclaircie, lisible sur fond sombre.
+  accentDark: '#cf7ec1'
+
+masthead:
+  backgrounds:
+    enabled: false
+    images: [] # Ajoutez vos propres JPEG, PNG ou WebP depuis /admin/.
+  weather:
+    enabled: false
+    localities: [] # Un simple nom, ex. Québec; quatre maximum.
+  # Puce scoreboard (style météo ardoise) à côté de la météo.
+  # Multi-équipes / multi-sports : rotation ~5 s (deck brassé, animation gare).
+  # Démo Quorum : surnom maison « Les Élans » (tous sports). Ici : off par défaut.
+  # Activer : enabled true + teams[] (id, name, code, sport, results, nextGame).
+  # Génère alors /sports/ (« Au tableau ») et la puce mât y mène.
+  sports:
+    enabled: false
+    # href: /sports/
+    # teams: []
+  tools:
+    pomodoro: true
+    solitaire: true
+
+# Barre radio sous le mât : le module de LE-RADAR, appelé en une ligne.
+# Les stations, le lecteur et son style restent chez LE-RADAR et se mettent
+# à jour sans toucher au journal. station : identifiant de radios.json
+# (chyz, cism, ckut, cjlo, cfak, choq…). Éteinte, la barre n'existe pas et
+# aucune requête ne part vers le-radar.ca.
+radio:
+  enabled: false
+  station: chyz
+  theme: dark
+  position: top
+
+# Si true : à l’enregistrement sans photo, l’algo stock propose une image
+# de la banque locale (ne remplace jamais une photo manuelle).
+media:
+  autoStockPhoto: false
+
+founded: '2026'
+license: CC-BY-SA-4.0
+
+# ---------------------------------------------------------------------------
+# Ce qui décide si le journal existe encore dans cinq ans.
+# `sync` vous avertit tant que c'est incomplet. Voir OWNERS.md.
+# ---------------------------------------------------------------------------
+governance:
+  owner: mon-organisation              # une ORGANISATION, jamais un compte perso
+  stewardEntity: Association étudiante # l'entité qui survit aux cohortes
+  contact: redaction@journal-exemple.invalid # remplacer par une adresse institutionnelle
+  repo: https://github.com/mon-organisation/mon-journal
+  domainRegistrar: ...
+  domainExpiresAt: '2030-01-01T00:00:00Z'   # la cause de mort n°1
+  recoveryContacts:                    # deux personnes minimum
+    - redaction@journal-exemple.invalid
+    - releve@journal-exemple.invalid

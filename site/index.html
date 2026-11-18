@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="fr-CA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LE KIOSQUE — Publier aujourd’hui. Transmettre demain.</title>
+  <meta name="description" content="Le journal étudiant clé en main, libre et portable.">
+  <meta name="theme-color" content="#6c2163">
+  <link rel="stylesheet" href="{{BASE_PATH}}/assets/kiosque-ui.css">
+</head>
+<body class="vitrine antialiased">
+  <a class="skip-link" href="#contenu">Aller au contenu</a>
+
+  <header class="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-md">
+    <div class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+      <a class="flex items-center gap-2.5 no-underline" href="{{BASE_PATH}}/">
+        <span class="grid size-8 place-items-center rounded-lg bg-primary text-sm font-bold text-primary-foreground" aria-hidden="true">K</span>
+        <span class="text-sm font-semibold tracking-[0.12em]">LE KIOSQUE</span>
+      </a>
+      <nav aria-label="Navigation principale" class="flex items-center gap-1">
+        <a class="hidden md:inline-flex h-9 items-center rounded-md px-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground" href="#fonctionnement">Comment ça marche</a>
+        <a class="hidden md:inline-flex h-9 items-center rounded-md px-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground" href="#options">Mettre en ligne</a>
+        <a class="btn" href="{{BASE_PATH}}/configurer/">Créer mon journal</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="contenu">
+    <section class="relative overflow-hidden">
+      <div class="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(60rem_30rem_at_50%_-10%,color-mix(in_oklch,var(--primary)_14%,transparent),transparent)]"></div>
+      <div class="mx-auto max-w-6xl px-4 pt-16 pb-12 text-center sm:px-6 sm:pt-24">
+        <span class="badge" data-variant="outline">Gratuit et libre · Fait au Québec</span>
+        <h1 class="mx-auto mt-6 max-w-4xl text-4xl font-semibold tracking-tight text-balance sm:text-6xl">Publier aujourd’hui.<br><span class="text-primary">Transmettre demain.</span></h1>
+        <p class="mx-auto mt-6 max-w-2xl text-lg text-pretty text-muted-foreground">Le site de votre journal étudiant, prêt en quelques minutes. Vous écrivez, il se publie, et rien ne se perd quand votre cohorte part.</p>
+        <div class="mt-8 flex flex-wrap justify-center gap-3">
+          <a class="btn" data-size="lg" href="{{BASE_PATH}}/configurer/">Configurer mon journal →</a>
+          <a class="btn" data-size="lg" data-variant="outline" href="{{BASE_PATH}}/demo/">Voir la démonstration</a>
+        </div>
+        <p class="mt-4 text-xs text-muted-foreground">Votre journal vous appartient : vos articles restent à vous.</p>
+      </div>
+      <div class="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
+        <figure class="m-0 overflow-hidden rounded-2xl bg-card shadow-2xl ring-1 ring-foreground/10">
+          <div class="flex items-center gap-1.5 border-b border-border bg-muted/60 px-4 py-2.5" aria-hidden="true">
+            <span class="size-2.5 rounded-full bg-foreground/15"></span><span class="size-2.5 rounded-full bg-foreground/15"></span><span class="size-2.5 rounded-full bg-foreground/15"></span>
+            <span class="ml-3 truncate rounded-md bg-background px-3 py-0.5 text-xs text-muted-foreground">le-quorum.exemple.ca</span>
+          </div>
+          <a href="{{BASE_PATH}}/demo/" class="block">
+            <picture>
+              <source media="(max-width: 640px)" srcset="{{BASE_PATH}}/assets/apercu-demo-mobile.jpg">
+              <img class="block h-auto w-full" src="{{BASE_PATH}}/assets/apercu-demo.jpg" width="1280" height="800" alt="Page d’accueil du Quorum, un journal étudiant inventé pour la démonstration." loading="eager">
+            </picture>
+          </a>
+          <figcaption class="border-t border-border px-4 py-2 text-xs text-muted-foreground">Le Quorum, journal de démonstration.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="fonctionnement" class="mx-auto max-w-6xl scroll-mt-20 px-4 py-20 sm:px-6">
+      <div class="max-w-2xl">
+        <p class="text-sm font-semibold text-primary">Comment ça marche</p>
+        <h2 class="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">Quatre étapes, aucune connaissance technique.</h2>
+      </div>
+      <ol class="mt-10 grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-4">
+        <li class="card" data-size="sm"><section><span class="kbd">1</span><h3 class="mt-3 text-base font-semibold">Vous le personnalisez</h3><p class="mt-1 text-muted-foreground">Vous choisissez le nom, le logo et les couleurs de votre journal.</p></section></li>
+        <li class="card" data-size="sm"><section><span class="kbd">2</span><h3 class="mt-3 text-base font-semibold">Vous écrivez</h3><p class="mt-1 text-muted-foreground">Vous rédigez vos articles dans un éditeur simple, comme un document.</p></section></li>
+        <li class="card" data-size="sm"><section><span class="kbd">3</span><h3 class="mt-3 text-base font-semibold">C’est en ligne</h3><p class="mt-1 text-muted-foreground">Le journal se publie sur le Web tout seul, sur ordinateur comme sur téléphone.</p></section></li>
+        <li class="card" data-size="sm"><section><span class="kbd">4</span><h3 class="mt-3 text-base font-semibold">Rien ne se perd</h3><p class="mt-1 text-muted-foreground">Tous les numéros restent archivés pour la cohorte suivante.</p></section></li>
+      </ol>
+    </section>
+
+    <section id="options" class="scroll-mt-20 border-t border-border bg-muted/50">
+      <div class="mx-auto max-w-6xl px-4 py-20 sm:px-6">
+        <div class="max-w-2xl">
+          <p class="text-sm font-semibold text-primary">Trois façons de le mettre en ligne</p>
+          <h2 class="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">Choisissez ce qui est le plus simple pour votre équipe.</h2>
+        </div>
+        <div class="mt-10 grid gap-4 md:grid-cols-3">
+          <article class="card"><header><h3>Sur le site WordPress de votre cégep</h3><p>Si votre association a déjà un site WordPress, vous y ajoutez Le Kiosque en quelques clics.</p></header><footer><span class="badge" data-variant="outline">Disponible</span></footer></article>
+          <article class="card"><header><h3>En ligne, gratuitement</h3><p>Vous créez un compte gratuit, et votre journal est en ligne. Rien à installer, rien à payer.</p></header><footer><span class="badge" data-variant="outline">Disponible</span></footer></article>
+          <article class="card"><header><h3>Sur une clé USB</h3><p>Tout le journal tient dans un dossier, avec un guide imprimé pour le local du journal.</p></header><footer><span class="badge" data-variant="outline">Disponible</span></footer></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="px-4 sm:px-6">
+      <div class="mx-auto flex max-w-6xl flex-col items-start gap-6 rounded-2xl bg-primary px-6 py-12 text-primary-foreground sm:px-12 md:flex-row md:items-center md:justify-between">
+        <div class="max-w-xl">
+          <p class="text-sm font-semibold opacity-80">Le Quorum</p>
+          <h2 class="mt-2 text-3xl font-semibold tracking-tight">Tout essayer, en un clic.</h2>
+          <p class="mt-3 opacity-85">Un vrai journal étudiant, avec rubriques, sports, météo et radio. Ouvrez-le, ou essayez l’espace de rédaction.</p>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <a class="btn bg-background! text-foreground! hover:bg-background/90!" data-size="lg" href="{{BASE_PATH}}/demo/">Ouvrir Le Quorum</a>
+          <a class="btn border-primary-foreground/30! text-primary-foreground! hover:bg-primary-foreground/10!" data-size="lg" data-variant="ghost" href="{{BASE_PATH}}/admin/">Essayer la rédaction</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="technique" class="mx-auto max-w-3xl scroll-mt-20 px-4 py-16 sm:px-6">
+      <details class="rounded-xl border border-border p-5 text-sm text-muted-foreground">
+        <summary class="cursor-pointer font-semibold text-foreground">Pour les responsables techniques</summary>
+        <p class="mt-3">Les articles sont écrits en Markdown et conservés dans un dépôt Git que l’équipe possède. Le site est produit en HTML statique, publiable sur GitHub Pages, avec une extension WordPress ou un kit portable. Code sous licence GPL-2.0, aucune dépendance à un service externe.</p>
+        <p class="mt-2"><a class="underline hover:text-foreground" href="https://github.com/azdak919/le-kiosque">Code source et documentation</a></p>
+      </details>
+    </section>
+  </main>
+
+  <footer class="border-t border-border">
+    <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-8 text-sm text-muted-foreground sm:px-6">
+      <span><strong class="text-foreground">LE KIOSQUE</strong> · Gratuit et libre</span>
+      <span class="flex gap-4"><a class="hover:text-foreground" href="https://github.com/azdak919/le-kiosque">Code source</a><a class="hover:text-foreground" href="https://github.com/azdak919/le-kiosque/blob/main/THIRD_PARTY.md">Crédits</a></span>
+    </div>
+  </footer>
+</body>
+</html>

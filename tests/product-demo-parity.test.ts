@@ -1,0 +1,219 @@
+/**
+ * Garantit que la démo Quorum et le gabarit produit partagent le même chrome
+ * (packages/theme-radar). Un journal généré ne doit pas diverger du look démo
+ * par un autre chemin de build.
+ */
+
+import assert from 'node:assert/strict';
+import { cp, mkdtemp, readFile, rm } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import test from 'node:test';
+import { fileURLToPath } from 'node:url';
+
+import { MarkdownSource } from '../packages/adapters/markdown/src/index.ts';
+import { createSourceContext } from '../packages/core/src/source.ts';
+import { build } from '../packages/pipeline/src/build.ts';
+
+const ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
+const silent = { info: () => {}, warn: () => {}, error: () => {} };
+
+async function buildFrom(
+  srcRelative: string,
+  opts: { editorial?: { mode: 'demo-local' | 'off' } } = {},
+): Promise<{ dir: string; out: string }> {
+  const src = path.join(ROOT, srcRelative);
+  const dir = await mkdtemp(path.join(os.tmpdir(), 'kiosque-parity-'));
+  await cp(path.join(src, 'content'), path.join(dir, 'content'), { recursive: true });
+  await cp(path.join(src, 'media'), path.join(dir, 'media'), { recursive: true }).catch(() => {});
+  await cp(path.join(src, 'theme'), path.join(dir, 'theme'), { recursive: true }).catch(() => {});
+
+  const source = new MarkdownSource();
+  await source.init({ root: dir }, createSourceContext({ logger: silent }));
+  const articles = [];
+  for await (const article of source.fetchArticles()) articles.push(article);
+  const bundle = {
+    publication: await source.fetchPublication(),
+    authors: await source.fetchAuthors(),
+    taxonomies: await source.fetchTaxonomies(),
+    articles,
+    syncedAt: new Date().toISOString(),
+  };
+  const out = path.join(dir, 'dist');
+  await build({
+    config: {
+      root: dir,
+      source: { adapter: 'markdown' },
+      deploy: { basePath: '' },
+      // Même bandeau que la démo publiée : lead / rest pour 2 lignes mobile.
+      demoNotice: 'Démonstration du Kiosque — journal étudiant fictif',
+      ...(opts.editorial ? { editorial: opts.editorial } : {}),
+    },
+    bundle,
+    outDir: out,
+    logger: silent,
+  });
+  return { dir, out };
+}
+
+test('demo et template reçoivent le même theme.css / kiosque.js (packages/theme-radar)', async (t) => {
+  const demo = await buildFrom('examples/demo-journal', { editorial: { mode: 'demo-local' } });
+  const tpl = await buildFrom('template');
+  t.after(async () => {
+    await rm(demo.dir, { recursive: true, force: true });
+    await rm(tpl.dir, { recursive: true, force: true });
+  });
+
+  const demoCss = await readFile(path.join(demo.out, 'assets/theme.css'), 'utf8');
+  const tplCss = await readFile(path.join(tpl.out, 'assets/theme.css'), 'utf8');
+  const demoJs = await readFile(path.join(demo.out, 'assets/kiosque.js'), 'utf8');
+  const tplJs = await readFile(path.join(tpl.out, 'assets/kiosque.js'), 'utf8');
+
+  assert.equal(demoCss, tplCss, 'theme.css doit être identique pour démo et produit');
+  assert.equal(demoJs, tplJs, 'kiosque.js doit être identique pour démo et produit');
+  assert.match(demoCss, /--masthead-ar:\s*3\.55/, 'bandeau mât fixe type Quorum présent');
+  assert.match(
+    demoCss,
+    /\.masthead--illustrated\s*\{[^}]*height:\s*clamp\(156px/,
+    'hauteur mât plafonnée (pas fluid content-driven)',
+  );
+  // Impression : bandeau démo rouge visible (accueil + article), fond forcé.
+  assert.match(
+    demoCss,
+    /@media\s+print\s*\{[\s\S]*?\.demo-banner\s*\{[\s\S]*?display:\s*block\s*!important[\s\S]*?print-color-adjust:\s*exact/,
+    'impression : bandeau démo rouge conservé',
+  );
+  // Impression : photos modestes + texte qui flotte autour (lead + corps).
+  assert.match(demoCss, /\.post-body\s+figure\.post-figure/, 'figures flottantes dans le corps');
+  assert.match(demoCss, /\.post-flow/, 'conteneur lead+corps pour float print');
+  assert.match(
+    demoCss,
+    /@media\s+print\s*\{[\s\S]*?\.post-lead\s*\{[\s\S]*?float:\s*right[\s\S]*?6\.8cm/,
+    'impression : lead flottant, largeur en cm',
+  );
+  assert.match(
+    demoCss,
+    /@media\s+print\s*\{[\s\S]*?\.post-body\s+figure\.post-figure[\s\S]*?5\.8cm/,
+    'impression : photos du corps en cm',
+  );
+  assert.match(demoJs, /computeMastheadFocalY/, 'cadrage auto mât présent');
+  assert.match(demoJs, /function applyTheme/, 'bascule thème présente');
+  // Mobile UX (7 points) : dock météo, nav peek, volume overlay.
+  assert.match(demoJs, /setMastheadWeatherDocked/, 'dock météo mobile');
+  assert.match(demoJs, /initMastheadSports/, 'puce sports mât');
+  assert.match(demoJs, /initNavCollapse/, 'nav collapse + peek');
+  assert.doesNotMatch(demoJs, /enhanceRadio/, 'la barre radio est le module de LE-RADAR, pas une copie');
+  assert.match(demoCss, /masthead-weather-dock/, 'styles dock météo');
+  assert.match(demoCss, /\.sports-chip/, 'styles puce sports');
+  assert.match(demoCss, /\.nav-shell\.has-overflow/, 'styles nav peek');
+  assert.match(demoCss, /--lead-title-size/, 'titre une ≤ wordmark (token)');
+
+  const demoHome = await readFile(path.join(demo.out, 'index.html'), 'utf8');
+  const tplHome = await readFile(path.join(tpl.out, 'index.html'), 'utf8');
+  assert.match(demoHome, /class="[^"]*masthead/);
+  assert.match(tplHome, /class="[^"]*masthead/);
+  // Même moteur de gabarits : outil thème + shuffle si multi-photos.
+  assert.match(demoHome, /id="theme-toggle"/);
+  assert.match(tplHome, /id="theme-toggle"/);
+  assert.match(demoHome, /id="masthead-weather-dock"/, 'emplacement dock météo');
+  assert.match(tplHome, /id="masthead-weather-dock"/);
+  assert.match(demoHome, /data-sports-payload/, 'équipe sports démo embarquée');
+  assert.match(demoHome, /Les Élans|Les &Eacute;lans/, 'surnom maison unique (focus-group Élans)');
+  assert.match(demoHome, /code&quot;:&quot;SLHH&quot;|"code":"SLHH"/, 'code équipe SLHH (override mainteneur)');
+  assert.match(demoHome, /data-nav-shell/, 'shell nav mobile');
+  assert.match(tplHome, /data-nav-shell/);
+  assert.match(demoHome, /data-nav-toggle/, 'bouton Toutes les rubriques');
+  assert.match(tplHome, /data-nav-toggle/);
+  assert.match(demoHome, /wire-title">Le fil</, 'démo Quorum : libellé focus-group');
+  assert.match(tplHome, /wire-title">À la une</, 'template : fallback tant que labels absents');
+
+  // Équipe : portraits + intro lisible ; seed de la démo versionné pour re-sync.
+  const demoAuthors = await readFile(path.join(demo.out, 'auteurs/index.html'), 'utf8');
+  assert.match(demoAuthors, /author-avatar__img/, 'portraits d’équipe dans le HTML statique');
+  assert.match(demoAuthors, /author-avatar__initials/, 'initiales en secours sous la photo');
+  assert.match(
+    demoAuthors,
+    /L’équipe en poste : rôle, cohorte et bio de chaque signature/,
+    'intro équipe reformulée',
+  );
+  const seed = await readFile(path.join(demo.out, 'assets/editorial/seed.json'), 'utf8');
+  assert.match(seed, /"version":\s*26/, 'seed démo v26 (dates sports live + matchs du jour campus)');
+  assert.match(seed, /Les Élans/, 'seed embarque le surnom maison Élans');
+  assert.doesNotMatch(seed, /Les Quorums/, 'plus de surnom redondant Quorums');
+  assert.match(seed, /hockey-interieur\.jpg/, 'photo corps hockey intérieur distincte du lead');
+  assert.match(seed, /Photo : Joshua Scott/, 'figure corps hockey crédite le photographe');
+  assert.match(seed, /Photo : Pambelle12|Photo : fir0002|Photo : art_inthecity/, 'autres figures corps créditées');
+  assert.match(seed, /Saint-Louis-du-Ha! Ha!/, 'météo démo = ville du cégep fictif');
+  assert.match(seed, /47\.6709/, 'latitude Saint-Louis-du-Ha! Ha!');
+  assert.match(seed, /"sport":"volleyball"/, 'plusieurs formations (sports) sous le même surnom');
+  assert.match(seed, /"sport":"basketball"/, 'basketball');
+  assert.match(seed, /"sport":"soccer"|"sport":"hockey"|"sport":"flag-football"/, 'autres sports');
+  assert.match(seed, /"sex":"(F|M|mixte)"/, 'formations F / M / mixte');
+  assert.match(seed, /Titans|Boomerang|Géants|Cheetahs/, 'adversaires = clubs RSEQ collégial réels');
+  assert.doesNotMatch(seed, /Blue Jays|Canadiens de Montréal|Maple Leafs/i, 'pas de sport pro NHL/MLB dans la démo');
+  assert.match(seed, /"demoLive"\s*:\s*true/, 'démo sports : dates live (ancre → aujourd’hui)');
+  assert.match(seed, /"code":"SLHH"/, 'code institution = SLHH (override mainteneur sports-code)');
+  assert.doesNotMatch(seed, /"code":"HAH"/, 'HAH non retenu (override → SLHH)');
+  assert.doesNotMatch(seed, /"code":"QUO"/, 'QUO retiré (plus de Cégep du Quorum)');
+  assert.match(seed, /Cégep de Saint-Louis-du-Ha! Ha!/, 'institution = ville / cégep Ha! Ha!');
+  assert.doesNotMatch(seed, /Cégep du Quorum/, 'plus de Cégep du Quorum (nom redondant journal)');
+  assert.match(demoJs, /initSportsBoardCollapse|Plus de matchs|KiosqueRefreshSportsBoard/, 'repli Au tableau + Plus de matchs');
+  assert.match(demoCss, /sports-board-wrap|sports-board-toggle/, 'CSS repli tableau sports');
+  assert.match(demoJs, /sportsBoardHref|focusSportsTeam|KiosqueFocusSportsTeam/, 'deep-link puce → carte formation');
+  assert.match(demoCss, /is-spotlight|sports-panel-spotlight-pulse/, 'pulse contour carte ciblée (parité LE-RADAR)');
+  assert.match(demoJs, /sportsHomeRichLabel|sportsOppRichLabel/, 'puce : maison sans (institution)');
+  assert.match(seed, /"opponentCode":"(GAR|LIM|CSF|CAL|SLA|CEM|SJR)"/, 'codes adversaires = institutions RSEQ');
+  // Prochains matchs : institution adverse (puce bureau + page Au tableau).
+  assert.match(
+    seed,
+    /"nextGame"\s*:\s*\{[^}]*"opponentInstitution"\s*:\s*"Cégep de Sainte-Foy"/,
+    'nextGame porte opponentInstitution (ex. Géants / Sainte-Foy)',
+  );
+  assert.match(demoJs, /sportsIsDesktopLabel|sports-chip--rich|SPORTS_SPORT_TONES/, 'densité mobile codes / bureau noms');
+  // Port LE-RADAR : 2 lignes (noms + date·sport), « reçoit »/« à », pas marquee score.
+  assert.match(demoJs, /sports-chip--match|sports-chip__body|sportsMatchSubLine/, 'puce 2 lignes (body + sous-ligne)');
+  assert.match(demoJs, /sportsMatchVerb|reçoit/, 'verbe reçoit / à (pas seulement vs)');
+  assert.match(demoCss, /\.sports-chip__body|\.sports-chip--match \.sports-chip__sub/, 'CSS 2 lignes score');
+  assert.match(demoCss, /sports-chip-rim-glow/, 'pulse bordure pourpre (chip-look)');
+  assert.match(demoJs, /SPORTS_CHIP_LEAVE_MS|is-leaving/, 'rotation sports : sortie soft leave');
+  assert.match(demoCss, /sports-chip-leave|sports-chip-arrive/, 'keyframes leave/arrive soft');
+  assert.match(demoJs, /weatherToneName|dataset\.weatherTone|data-weather-tone/, 'météo data-weather-tone');
+  assert.match(demoCss, /masthead-photo-credit[\s\S]*backdrop-filter/, 'crédit photo soft glass');
+  const demoBackend = await readFile(path.join(demo.out, 'assets/editorial/demo-backend.js'), 'utf8');
+  assert.match(demoBackend, /#refreshUnmodifiedDemo|refreshUnmodifiedDemo/, 'upgrade seed local sans perdre les éditions');
+  assert.match(demoBackend, /seed\.publication/, 'refresh seed met à jour publication (sports mât)');
+  assert.match(demoJs, /KiosqueRefreshMasthead/, 're-paint sports après branding éditorial');
+  assert.match(demoJs, /SPORTS_ROTATE_MIN_MS|5600/, 'dwell min sports ~5,6 s');
+  assert.match(demoJs, /SPORTS_MARQUEE_PX_PER_S|scheduleSportsRotate/, 'marquee lent + rotation après cycle');
+  assert.match(demoJs, /sports-chip__badge|sports-chip__score/, 'format scoreboard codes + score');
+  assert.match(demoJs, /is-arriving/, 'animation arrivée sports');
+  assert.match(demoCss, /sports-chip-arrive|sports-tile-arrive/, 'keyframes arrivée scoreboard');
+  assert.match(demoCss, /sports-marquee-slide[\s\S]*18%/, 'marquee avec pauses aux extrémités');
+  // Port session LE-RADAR 2026-08-11 : horloge FR « h », ordre sports, pas de flash date.
+  assert.match(demoJs, /formatMastheadClock|h \$2|\$1 h \$2/, 'horloge mât : séparateur h (QC)');
+  assert.match(demoJs, /orderSportsDeck/, 'deck sports ordonné (récent → prochain), pas shuffle total');
+  assert.doesNotMatch(demoJs, /function shuffleSportsDeck/, 'plus de Fisher–Yates total sur le deck sports');
+  assert.match(demoCss, /masthead--photo-ready/, 'date mât visible après photo prête');
+  assert.match(
+    demoCss,
+    /\.masthead--illustrated\.masthead--photo-ready \.masthead-clock time::before/,
+    'point médian date·heure sur photo',
+  );
+  // Marquee net (pas de fondu permanent gauche/droite sur la puce).
+  assert.doesNotMatch(
+    demoCss,
+    /\.sports-chip__line\.is-sports-marquee\s*\{[^}]*mask-image/,
+    'pas de mask-image flou permanent sur le marquee sports',
+  );
+  // Bandeau démo 2 lignes mobile + offset sticky mesuré (évite clip radio).
+  assert.match(demoHome, /demo-banner__lead/, 'bandeau démo : lead (1ʳᵉ ligne mobile)');
+  assert.match(demoHome, /demo-banner__rest/, 'bandeau démo : rest (2ᵉ ligne mobile)');
+  assert.match(demoJs, /syncDemoBannerStickyOffset|initDemoBannerStickyOffset/, 'mesure hauteur bandeau → sticky radio');
+  assert.match(demoCss, /demo-banner__lead::after/, 'tiret long en fin de 1ʳᵉ ligne mobile');
+  // Espace garanti après le nom de ville (ex. Ha! 15°).
+  assert.match(
+    demoCss,
+    /\.weather-chip__temp[\s\S]*?margin-inline-start/,
+    'température météo : air après le nom (Ha! …)',
+  );
+});

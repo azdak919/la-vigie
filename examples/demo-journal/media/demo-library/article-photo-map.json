@@ -1,0 +1,602 @@
+{
+  "tournoi-soccer-interprogramme": {
+    "src": "/media/demo-library/articles/soccer.jpg",
+    "alt": "Ballon de soccer sur un terrain en herbe",
+    "credit": "Peter Glaser baraida",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Adidas_soccer_ball_on_a_grass_pitch_(Unsplash).jpg",
+    "width": 1920,
+    "height": 1280,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "soccer"
+  },
+  "basketball-equipe-recrues": {
+    "src": "/media/demo-library/articles/basketball.jpg",
+    "alt": "Match de basketball en gymnase",
+    "credit": "Bama in ATL",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:2016_Auburn_at_Alabama_NCAAM_Basketball_Game.jpg",
+    "width": 1920,
+    "height": 1440,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "basketball"
+  },
+  "course-cross-country": {
+    "src": "/media/demo-library/articles/course.jpg",
+    "alt": "Course à pied en nature",
+    "credit": "Isaacvp",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:2018_Orizaba_Running_race_01.jpg",
+    "width": 1920,
+    "height": 1080,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "course"
+  },
+  "serre-pedagogique-campus": {
+    "src": "/media/demo-library/articles/serre.jpg",
+    "alt": "Serre pédagogique avec des plants",
+    "credit": "Rodrigo.Argenton",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Estufa_principal_do_Jardim_Bot%C3%A2nico_de_Curitiba_02.jpg",
+    "width": 1920,
+    "height": 1317,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "serre"
+  },
+  "laboratoire-sciences-ouvert": {
+    "src": "/media/demo-library/articles/labo.jpg",
+    "alt": "Laboratoire de chimie moderne",
+    "credit": "Horia Varlan",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Chemistry_laboratory.jpg",
+    "width": 1920,
+    "height": 1325,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "labo"
+  },
+  "radio-campus-cinquante-ans": {
+    "src": "/media/demo-library/articles/radio.jpg",
+    "alt": "Studio de radio avec microphones",
+    "credit": "Ethan Long",
+    "license": "CC BY-SA 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Broadcast_Studio_(53998133689).jpg",
+    "width": 1920,
+    "height": 2880,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "radio"
+  },
+  "balado-histoire-campus": {
+    "src": "/media/demo-library/articles/radio.jpg",
+    "alt": "Studio de radio avec microphones",
+    "credit": "Ethan Long",
+    "license": "CC BY-SA 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Broadcast_Studio_(53998133689).jpg",
+    "width": 1920,
+    "height": 2880,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "radio"
+  },
+  "veille-sante-mentale": {
+    "src": "/media/demo-library/articles/campus-vie.jpg",
+    "alt": "Étudiantes et étudiants sur un campus au printemps",
+    "credit": "Tulane Public Relations",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Students_enjoy_springtime_weather._(5554288570).jpg",
+    "width": 1920,
+    "height": 1286,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "campus-vie"
+  },
+  "atelier-reparation-velos": {
+    "src": "/media/demo-library/articles/velo.jpg",
+    "alt": "Station de réparation de vélos",
+    "credit": "Briana18091440",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Bike_repair_station.jpg",
+    "width": 1920,
+    "height": 2560,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "velo"
+  },
+  "brigade-compost-campus": {
+    "src": "/media/demo-library/articles/compost.jpg",
+    "alt": "Bac de compost et matières organiques",
+    "credit": "fir0002  flagstaffotos [at] gmail.com\n\t\tCanon 20D + Tamron 28-75mm f/2.8",
+    "license": "GFDL 1.2",
+    "licenseUrl": "https://www.gnu.org/licenses/old-licenses/fdl-1.2.html",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Compost_bin.jpg",
+    "width": 1600,
+    "height": 1135,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "compost"
+  },
+  "pret-ordinateurs-bibliotheque": {
+    "src": "/media/demo-library/articles/biblio-pc.jpg",
+    "alt": "Ordinateurs en bibliothèque",
+    "credit": "Mshuang2",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Library_computers.jpg",
+    "width": 1920,
+    "height": 1440,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "biblio-pc"
+  },
+  "sondage-horaires-bibliotheque": {
+    "src": "/media/demo-library/articles/livres.jpg",
+    "alt": "Rayons de livres en bibliothèque",
+    "credit": "w:it:Utente:OrbiliusMagister",
+    "license": "Public domain",
+    "licenseUrl": "https://commons.wikimedia.org/wiki/File:Bookshelves.jpg",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Bookshelves.jpg",
+    "width": 1920,
+    "height": 1318,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "livres"
+  },
+  "assemblee-generale-reconduction": {
+    "src": "/media/demo-library/articles/amphi.jpg",
+    "alt": "Amphithéâtre universitaire rempli",
+    "credit": "Kannan5645",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Lecture_hall.jpg",
+    "width": 1600,
+    "height": 1200,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "amphi"
+  },
+  "cafeteria-menu-vegetal": {
+    "src": "/media/demo-library/articles/caf.jpg",
+    "alt": "Cafétéria ou salle à manger collective",
+    "credit": "Tanvir Hussain",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Cafeteria.jpg",
+    "width": 1920,
+    "height": 1440,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "caf"
+  },
+  "chronique-cinema-midi": {
+    "src": "/media/demo-library/articles/cinema.jpg",
+    "alt": "Petite salle de cinéma avec rangées de sièges rouges et projecteur",
+    "credit": "Mr N",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Kinolino-Kellerkino_02.jpg",
+    "width": 1920,
+    "height": 1443,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "cinema"
+  },
+  "club-lecture-rentree": {
+    "src": "/media/demo-library/articles/livres.jpg",
+    "alt": "Rayons de livres en bibliothèque",
+    "credit": "w:it:Utente:OrbiliusMagister",
+    "license": "Public domain",
+    "licenseUrl": "https://commons.wikimedia.org/wiki/File:Bookshelves.jpg",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Bookshelves.jpg",
+    "width": 1920,
+    "height": 1318,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "livres"
+  },
+  "editorial-espaces-calmes": {
+    "src": "/media/demo-library/articles/calme.jpg",
+    "alt": "Salle de lecture calme à la Grande Bibliothèque de Montréal",
+    "credit": "Mourial",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Grande_Bibliotheque_Quebec_Interieur.JPG",
+    "width": 1920,
+    "height": 1440,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "calme"
+  },
+  "exposition-finissants-arts": {
+    "src": "/media/demo-library/articles/arts.jpg",
+    "alt": "Exposition d’art dans une galerie",
+    "credit": "YessMendez",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Art_exhibition.jpg",
+    "width": 1920,
+    "height": 1440,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "arts"
+  },
+  "transport-collectif-editorial": {
+    "src": "/media/demo-library/articles/bus.jpg",
+    "alt": "Autobus RTC de la Ville de Québec (Nova Bus LFS)",
+    "credit": "Bouchecl",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Qu%C3%A9bec_RTC_-_Nova_Bus_LFS.jpg",
+    "width": 1920,
+    "height": 1440,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "bus"
+  },
+  "debat-frais-stationnement": {
+    "src": "/media/demo-library/articles/parking.jpg",
+    "alt": "Stationnement pour vélos sur un campus",
+    "credit": "David Shay",
+    "license": "CC BY-SA 2.5",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.5",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Bicycle_parking.jpg",
+    "width": 1120,
+    "height": 845,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "parking"
+  },
+  "entrainement-hockey-interieur": {
+    "src": "/media/demo-library/articles/hockey.jpg",
+    "alt": "Match de hockey sur glace en aréna",
+    "credit": "Daniel Case",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Shot_on_goal_during_youth_hockey_tournament_at_West_Edmonton_Mall_Ice_Palace.jpg",
+    "width": 1920,
+    "height": 1360,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "hockey"
+  },
+  "match-intercegep-volley": {
+    "src": "/media/demo-library/articles/volleyball.jpg",
+    "alt": "Match de volleyball en gymnase",
+    "credit": "Zorro2212",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Volleyball_match_-_shakehands_before_the_match.jpg",
+    "width": 1920,
+    "height": 1285,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "volleyball"
+  },
+  "tournoi-echecs-campus": {
+    "src": "/media/demo-library/articles/chess.jpg",
+    "alt": "Pièces d’échecs sur un échiquier",
+    "credit": "Wilfredor",
+    "license": "CC0",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/deed.en",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Chess_game_Staunton_No._6_perfil_view_8.jpg",
+    "width": 1920,
+    "height": 1260,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "chess"
+  },
+  "collecte-sang-campus": {
+    "src": "/media/demo-library/articles/blood.jpg",
+    "alt": "Prélèvement sanguin lors d’une collecte de sang",
+    "credit": "Staff Sgt. Stephanie Rubi, U.S. Air Force",
+    "license": "Public domain",
+    "licenseUrl": "https://commons.wikimedia.org/wiki/File:Patient_gets_blood_drawn_to_be_screened_as_a_blood_donor.jpg",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Patient_gets_blood_drawn_to_be_screened_as_a_blood_donor.jpg",
+    "width": 1920,
+    "height": 1275,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "blood"
+  },
+  "projet-murales-corridor": {
+    "src": "/media/demo-library/articles/mural.jpg",
+    "alt": "Street art et murale à Montréal",
+    "credit": "Coastal Elite from Halifax, Canada",
+    "license": "CC BY-SA 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Montreal_Street_Art_Graffiti_(29241125286).jpg",
+    "width": 1920,
+    "height": 1209,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "mural"
+  },
+  "aide-devoirs-pair": {
+    "src": "/media/demo-library/articles/tutoring.jpg",
+    "alt": "Étudiantes et étudiants en atelier de tutorat au cégep",
+    "credit": "JBouchez",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Formation_condens%C3%A9e_%C3%A0_Wikip%C3%A9dia_lors_du_cours_IPMSH_du_C%C3%A9gep_du_Vieux_Montr%C3%A9al.jpg",
+    "width": 1200,
+    "height": 800,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "tutoring"
+  },
+  "atelier-cv-emploi": {
+    "src": "/media/demo-library/articles/resume.jpg",
+    "alt": "Entretien d’embauche ou atelier candidature",
+    "credit": "HeatherKatz001",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:What_to_Expect_at_a_Job_Interview_at_a_Teaching_School.jpg",
+    "width": 1920,
+    "height": 1484,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "resume"
+  },
+  "clinic-soins-infirmiers": {
+    "src": "/media/demo-library/articles/nursing.jpg",
+    "alt": "Prise de tension artérielle en clinique-école",
+    "credit": "Pambelle12",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Checking_blood_pressure.jpg",
+    "width": 1920,
+    "height": 1440,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "nursing"
+  },
+  "forum-orientation-programmes": {
+    "src": "/media/demo-library/articles/career.jpg",
+    "alt": "Salon de l’emploi ou forum d’orientation",
+    "credit": "German Embassy London",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Exhibitors_at_the_Career_Fair_(30983205220).jpg",
+    "width": 1920,
+    "height": 1280,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "career"
+  },
+  "scene-libre-vendredi": {
+    "src": "/media/demo-library/articles/stage.jpg",
+    "alt": "Scène et public lors d’un spectacle étudiant au cégep",
+    "credit": "art_inthecity from Montréal, CA",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Le_chant_des_cageux%2C_C%C3%A9g%C3%A9p_du_Vieux_Montr%C3%A9al%2C_2020._(49623021442).jpg",
+    "width": 1920,
+    "height": 1440,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "stage"
+  },
+  "course-orientation-bois": {
+    "src": "/media/demo-library/articles/trail.jpg",
+    "alt": "Sentier et sous-bois du parc du Mont-Royal à Montréal",
+    "credit": "Jean Gagnon",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Parc_du_Mont-Royal_015.jpg",
+    "width": 1920,
+    "height": 1440,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "trail"
+  },
+  "rencontre-alumni-redaction": {
+    "src": "/media/demo-library/articles/graduation.jpg",
+    "alt": "Finissantes et finissants en toge lors d’une cérémonie de diplomation",
+    "credit": "Stewart Oak, Imperial College London",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://commons.wikimedia.org/wiki/File:Imperial_College_London_graduation_gowns.jpg",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Imperial_College_London_graduation_gowns.jpg",
+    "width": 1920,
+    "height": 1334,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "graduation"
+  },
+  "budget-participatif-agee": {
+    "src": "/media/demo-library/articles/participatory.jpg",
+    "alt": "Hall et espaces communs d’un campus collégial québécois",
+    "credit": "Khayman",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:C%C3%A9gep_de_Sainte-Foy_(int%C3%A9rieur).JPG",
+    "width": 1920,
+    "height": 1285,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "participatory"
+  },
+  "club-photo-exposition": {
+    "src": "/media/demo-library/articles/photo-club.jpg",
+    "alt": "Murale et art urbain à Montréal",
+    "credit": "Coastal Elite from Halifax, Canada",
+    "license": "CC BY-SA 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Montreal_Street_Art_Graffiti_(29241125286).jpg",
+    "width": 1920,
+    "height": 1209,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "photo-club"
+  },
+  "cine-club-classiques": {
+    "src": "/media/demo-library/articles/cinema.jpg",
+    "alt": "Petite salle de cinéma avec rangées de sièges rouges et projecteur",
+    "credit": "Mr N",
+    "license": "CC BY-SA 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Kinolino-Kellerkino_02.jpg",
+    "width": 1920,
+    "height": 1443,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "cinema"
+  },
+  "chronique-podcasts-etudiants": {
+    "src": "/media/demo-library/articles/radio.jpg",
+    "alt": "Studio de radio avec microphones",
+    "credit": "Ethan Long",
+    "license": "CC BY-SA 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.0/",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Broadcast_Studio_(53998133689).jpg",
+    "width": 1920,
+    "height": 2880,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "radio"
+  },
+  "editorial-bibliotheque-silence": {
+    "src": "/media/demo-library/articles/calme.jpg",
+    "alt": "Salle de lecture calme à la Grande Bibliothèque de Montréal",
+    "credit": "Mourial",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Grande_Bibliotheque_Quebec_Interieur.JPG",
+    "width": 1920,
+    "height": 1440,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "calme"
+  },
+  "journee-portes-ouvertes-labos": {
+    "src": "/media/demo-library/articles/labo.jpg",
+    "alt": "Laboratoire de chimie moderne",
+    "credit": "Horia Varlan",
+    "license": "CC BY 2.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/2.0/",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Chemistry_laboratory.jpg",
+    "width": 1920,
+    "height": 1325,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "labo"
+  },
+  "lettre-ouverte-transport": {
+    "src": "/media/demo-library/articles/bus.jpg",
+    "alt": "Autobus RTC de la Ville de Québec (Nova Bus LFS)",
+    "credit": "Bouchecl",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Qu%C3%A9bec_RTC_-_Nova_Bus_LFS.jpg",
+    "width": 1920,
+    "height": 1440,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "bus"
+  },
+  "opinion-frais-associatifs": {
+    "src": "/media/demo-library/articles/participatory.jpg",
+    "alt": "Hall et espaces communs d’un campus collégial québécois",
+    "credit": "Khayman",
+    "license": "CC BY-SA 3.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:C%C3%A9gep_de_Sainte-Foy_(int%C3%A9rieur).JPG",
+    "width": 1920,
+    "height": 1285,
+    "focalPoint": {
+      "x": 50,
+      "y": 48
+    },
+    "theme": "participatory"
+  }
+}

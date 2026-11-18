@@ -1,0 +1,599 @@
+# Carte d'identité du journal. Le premier fichier que remplit une nouvelle
+# équipe, et le seul qu'il faut relire à chaque passation.
+
+slug: le-quorum
+name: Le Quorum
+tagline: On vote, on débat, on imprime
+institution: Cégep de Saint-Louis-du-Ha! Ha!
+institutionType: cegep
+# Province (QC). La ville de la démo = Saint-Louis-du-Ha! Ha! (Bas-Saint-Laurent) — météo mât.
+region: Québec
+lang: fr-CA
+siteUrl: https://journal-exemple.invalid
+timeZone: America/Toronto
+
+theme:
+  # Reprend le pourpre de marque de LE-RADAR. Une équipe met ici la couleur
+  # officielle de son établissement (voir brand-colors.json de LE-RADAR).
+  accent: '#6c2163'
+  accentDark: '#cf7ec1'
+  typography: modern-accessible
+
+# Libellés d’interface — verdict focus-group/decisions/le-kiosque-wire-title.json
+# wireTitle = en-tête de la page d’accueil ; leadEyebrow = pastille sur la manchette.
+labels:
+  wireTitle: Le fil
+  leadEyebrow: À la une
+
+masthead:
+  backgrounds:
+    enabled: true
+    # Pool mât : extérieurs campus lisibles (pas d’intérieurs / toits plats /
+    # terrains vides). Ordre = priorité d’affichage et de shuffle.
+    images:
+      - id: 1c05402e-3d91-54df-8638-1105d7dbcdd8
+        src: /media/demo-library/mcgill-roddick.jpg
+        alt: "Portails Roddick de l’Université McGill à Montréal"
+        caption: "Campus McGill (Montréal)."
+        credit: "Gene.arboit"
+        creditUrl: https://commons.wikimedia.org/wiki/User:Gene.arboit
+        license: CC BY-SA 3.0
+        licenseUrl: https://creativecommons.org/licenses/by-sa/3.0/
+        sourceUrl: https://commons.wikimedia.org/wiki/File:Roddick_Gates_(McGill_University)_2005-09-02.jpg
+        width: 1920
+        height: 1440
+        focalPoint: { x: 50, y: 42 }
+      - id: 556552aa-0082-5038-a067-57c87da0996c
+        src: /media/demo-library/mcgill-campus.jpg
+        alt: "Campus centre-ville de l’Université McGill"
+        caption: "McGill (Montréal)."
+        credit: "Jeangagnon"
+        creditUrl: https://commons.wikimedia.org/wiki/File:McGill_University_downtown_campus_31.JPG
+        license: CC BY-SA 3.0
+        licenseUrl: https://creativecommons.org/licenses/by-sa/3.0/
+        sourceUrl: https://commons.wikimedia.org/wiki/File:McGill_University_downtown_campus_31.JPG
+        width: 1920
+        height: 1440
+        focalPoint: { x: 50, y: 42 }
+      - id: 90e7c65a-3dc6-5b98-8694-19c7a320701c
+        src: /media/demo-library/ulaval-parc.jpg
+        alt: "Parc sur le campus de l’Université Laval"
+        caption: "Université Laval (Québec)."
+        credit: "Wilfredor"
+        creditUrl: https://commons.wikimedia.org/wiki/File:Park_in_Universit%C3%A9_Laval.jpg
+        license: CC BY-SA 4.0
+        licenseUrl: https://creativecommons.org/licenses/by-sa/4.0/
+        sourceUrl: https://commons.wikimedia.org/wiki/File:Park_in_Universit%C3%A9_Laval.jpg
+        width: 1920
+        height: 1280
+        focalPoint: { x: 50, y: 46 }
+      - id: d46be5d9-6524-5846-8576-68d9680fd191
+        src: /media/demo-library/ulaval-campus.jpg
+        alt: "Campus de l’Université Laval à Québec"
+        caption: "Université Laval (Québec)."
+        credit: "Wilfredor"
+        creditUrl: https://commons.wikimedia.org/wiki/File:Universit%C3%A9_Laval%2C_Quebec%2C_Canada_02.jpg
+        license: CC0
+        licenseUrl: https://creativecommons.org/publicdomain/zero/1.0/
+        sourceUrl: https://commons.wikimedia.org/wiki/File:Universit%C3%A9_Laval%2C_Quebec%2C_Canada_02.jpg
+        width: 1920
+        height: 1305
+        focalPoint: { x: 50, y: 48 }
+      - id: 00117e7b-3263-55db-99dd-b89436785bb5
+        src: /media/demo-library/bishops-campus.jpg
+        alt: "Campus de Bishop’s University"
+        caption: "Bishop’s University."
+        credit: "Balcer"
+        creditUrl: https://commons.wikimedia.org/wiki/File:Bishop's_University_campus_2011.jpg
+        license: CC BY 3.0
+        licenseUrl: https://creativecommons.org/licenses/by/3.0/
+        sourceUrl: https://commons.wikimedia.org/wiki/File:Bishop's_University_campus_2011.jpg
+        width: 1920
+        height: 1440
+        focalPoint: { x: 50, y: 46 }
+      - id: f45f6860-ba3f-536d-9db0-12ddbf5bc5db
+        src: /media/demo-library/uqam-jasmin.jpg
+        alt: "Pavillon Judith-Jasmin de l’UQAM à Montréal"
+        caption: "UQAM (Montréal)."
+        credit: "Great11"
+        creditUrl: https://commons.wikimedia.org/wiki/File:Pavillon_Judith-Jasmin_UQAM_1.jpg
+        license: CC BY-SA 4.0
+        licenseUrl: https://creativecommons.org/licenses/by-sa/4.0/
+        sourceUrl: https://commons.wikimedia.org/wiki/File:Pavillon_Judith-Jasmin_UQAM_1.jpg
+        width: 1920
+        height: 1280
+        focalPoint: { x: 50, y: 38 }
+      - id: e1345729-c51f-585e-9c97-105d82bcccff
+        src: /media/demo-library/concordia-hall.jpg
+        alt: "Édifice Henry F. Hall de l’Université Concordia"
+        caption: "Concordia (Montréal)."
+        credit: "Jeangagnon"
+        creditUrl: https://commons.wikimedia.org/wiki/File:Henry_F._Hall_Building_07.JPG
+        license: CC BY-SA 3.0
+        licenseUrl: https://creativecommons.org/licenses/by-sa/3.0/
+        sourceUrl: https://commons.wikimedia.org/wiki/File:Henry_F._Hall_Building_07.JPG
+        width: 1920
+        height: 1440
+        focalPoint: { x: 50, y: 40 }
+      - id: 77b1f574-1be1-57af-8413-ca80b7f3bccc
+        src: /media/demo-library/udem-gaudry.jpg
+        alt: "Pavillon Roger-Gaudry de l’Université de Montréal"
+        caption: "Université de Montréal."
+        credit: "Funke"
+        creditUrl: https://commons.wikimedia.org/wiki/File:Pavillon_Roger-Gaudry_II.jpg
+        license: CC BY-SA 4.0
+        licenseUrl: https://creativecommons.org/licenses/by-sa/4.0/
+        sourceUrl: https://commons.wikimedia.org/wiki/File:Pavillon_Roger-Gaudry_II.jpg
+        width: 1920
+        height: 1080
+        focalPoint: { x: 50, y: 38 }
+      - id: abb5f292-a46a-5b09-8fbd-fb13640cd680
+        src: /media/demo-library/batiment-jonquiere.jpg
+        alt: "Bâtiment du Cégep de Jonquière vu de l’extérieur"
+        caption: "Bâtiment du Cégep de Jonquière."
+        credit: "Khayman"
+        creditUrl: https://commons.wikimedia.org/wiki/User:Khayman
+        license: CC BY-SA 3.0
+        licenseUrl: https://creativecommons.org/licenses/by-sa/3.0/
+        sourceUrl: https://commons.wikimedia.org/wiki/File:B%C3%A2timent_du_C%C3%A9gep_de_Jonqui%C3%A8re.JPG
+        width: 1920
+        height: 1285
+        focalPoint: { x: 50, y: 48 }
+      - id: 4ad82ff9-79a6-5a8f-9c40-3e2073a54b9b
+        src: /media/demo-library/sherbrooke-longueuil.jpg
+        alt: "Campus de Longueuil de l’Université de Sherbrooke"
+        caption: "Université de Sherbrooke (Longueuil)."
+        credit: "Jeangagnon"
+        creditUrl: https://commons.wikimedia.org/wiki/File:Campus_de_Longueuil_-_Universite_de_Sherbrooke_09.jpg
+        license: CC BY-SA 3.0
+        licenseUrl: https://creativecommons.org/licenses/by-sa/3.0/
+        sourceUrl: https://commons.wikimedia.org/wiki/File:Campus_de_Longueuil_-_Universite_de_Sherbrooke_09.jpg
+        width: 1920
+        height: 1440
+        focalPoint: { x: 50, y: 46 }
+  weather:
+    enabled: true
+    # Localité du cégep fictif (Bas-Saint-Laurent). Coords OSM (WGS84) + slug
+    # MétéoMédia ; clic → Environnement Canada (coords) et MétéoMédia (data- / title).
+    localities:
+      - name: Saint-Louis-du-Ha! Ha!
+        latitude: 47.6709
+        longitude: -68.9797
+        meteomediaSlug: saint-louis-du-ha-ha
+  # Scoreboard mât — un seul surnom maison pour tous les sports (comme le RSEQ :
+  # une institution = un club, plusieurs formations). Code institution = SLHH.
+  # Surnom : « Les Élans » (focus-group le-kiosque-team-nickname) — pas « Quorums ».
+  # Adversaires = clubs RSEQ collégial ; scores/dates de calendrier.
+  # Mobile : codes (SLHH vs SLA). Bureau : Élans vs Barons (Champlain Saint-Lambert)
+  # (maison sans parenthèse institution — évidente dans le journal du campus).
+  # Rotation type gare LE-RADAR (deck brassé, ~5,2 s, animation is-arriving).
+  sports:
+    enabled: true
+    href: /sports/
+    # Ancre de rédaction des fixtures inventées (écarts relatifs entre matchs).
+    # demoLive: décale tout pour que cette date = « aujourd’hui » à l’affichage
+    # (scores récents, matchs du jour, prochains) — la démo ne vieillit pas.
+    demoAsOf: '2026-09-20'
+    demoLive: true
+    # Formations Élans : H / F / mixte + plusieurs sports (parité RSEQ multi-cartes).
+    teams:
+      - id: demo-elans-volley-f
+        name: Les Élans
+        code: SLHH
+        institution: Cégep de Saint-Louis-du-Ha! Ha!
+        sport: volleyball
+        sportLabel: Volleyball
+        sex: F
+        fictional: true
+        colors: { primary: '#6c2163', secondary: '#f4e8f2' }
+        results:
+          - date: '2026-09-18'
+            opponent: Boomerang
+            opponentCode: GAR
+            opponentInstitution: Cégep François-Xavier-Garneau
+            home: true
+            scoreFor: 3
+            scoreAgainst: 1
+            result: W
+            sport: volleyball
+            competition: RSEQ collégial
+          - date: '2026-09-11'
+            opponent: Titans
+            opponentCode: LIM
+            opponentInstitution: Cégep Limoilou
+            home: false
+            scoreFor: 1
+            scoreAgainst: 3
+            result: L
+            sport: volleyball
+            competition: RSEQ collégial
+        nextGame:
+          # Même jour que demoAsOf → match du jour après décalage live
+          date: '2026-09-20'
+          time: '19:00'
+          opponent: Géants
+          opponentCode: CSF
+          opponentInstitution: Cégep de Sainte-Foy
+          home: true
+          competition: RSEQ collégial
+      - id: demo-elans-volley-m
+        name: Les Élans
+        code: SLHH
+        institution: Cégep de Saint-Louis-du-Ha! Ha!
+        sport: volleyball
+        sportLabel: Volleyball
+        sex: M
+        fictional: true
+        colors: { primary: '#5a1a54', secondary: '#f0e0ed' }
+        results:
+          - date: '2026-09-19'
+            opponent: Cavaliers
+            opponentCode: CSL
+            opponentInstitution: Cégep de Saint-Laurent
+            home: true
+            scoreFor: 3
+            scoreAgainst: 0
+            result: W
+            sport: volleyball
+            competition: RSEQ collégial
+          - date: '2026-09-12'
+            opponent: Cheetahs
+            opponentCode: CAL
+            opponentInstitution: Cégep André-Laurendeau
+            home: false
+            scoreFor: 1
+            scoreAgainst: 3
+            result: L
+            sport: volleyball
+            competition: RSEQ collégial
+        nextGame:
+          date: '2026-10-06'
+          time: '19:30'
+          opponent: Barons
+          opponentCode: SLA
+          opponentInstitution: Champlain College Saint-Lambert
+          home: false
+          competition: RSEQ collégial
+      - id: demo-elans-basket-m
+        name: Les Élans
+        code: SLHH
+        institution: Cégep de Saint-Louis-du-Ha! Ha!
+        sport: basketball
+        sportLabel: Basketball
+        sex: M
+        fictional: true
+        colors: { primary: '#003da5', secondary: '#e8f0ff' }
+        results:
+          - date: '2026-09-20'
+            opponent: Cheetahs
+            opponentCode: CAL
+            opponentInstitution: Cégep André-Laurendeau
+            home: true
+            scoreFor: 72
+            scoreAgainst: 68
+            result: W
+            sport: basketball
+            competition: RSEQ collégial
+          - date: '2026-09-13'
+            opponent: Cavaliers
+            opponentCode: CSL
+            opponentInstitution: Cégep de Saint-Laurent
+            home: false
+            scoreFor: 61
+            scoreAgainst: 74
+            result: L
+            sport: basketball
+            competition: RSEQ collégial
+        nextGame:
+          date: '2026-10-05'
+          time: '18:30'
+          opponent: Gaulois
+          opponentCode: VAL
+          opponentInstitution: Cégep de Valleyfield
+          home: true
+          competition: RSEQ collégial
+      - id: demo-elans-basket-f
+        name: Les Élans
+        code: SLHH
+        institution: Cégep de Saint-Louis-du-Ha! Ha!
+        sport: basketball
+        sportLabel: Basketball
+        sex: F
+        fictional: true
+        colors: { primary: '#1a4fbf', secondary: '#eef3ff' }
+        results:
+          - date: '2026-09-16'
+            opponent: Titans
+            opponentCode: LIM
+            opponentInstitution: Cégep Limoilou
+            home: false
+            scoreFor: 58
+            scoreAgainst: 63
+            result: L
+            sport: basketball
+            competition: RSEQ collégial
+          - date: '2026-09-09'
+            opponent: Cougars
+            opponentCode: CEM
+            opponentInstitution: Cégep Édouard-Montpetit
+            home: true
+            scoreFor: 67
+            scoreAgainst: 55
+            result: W
+            sport: basketball
+            competition: RSEQ collégial
+        nextGame:
+          date: '2026-10-07'
+          time: '18:00'
+          opponent: Géants
+          opponentCode: CSF
+          opponentInstitution: Cégep de Sainte-Foy
+          home: true
+          competition: RSEQ collégial
+      - id: demo-elans-soccer-x
+        name: Les Élans
+        code: SLHH
+        institution: Cégep de Saint-Louis-du-Ha! Ha!
+        sport: soccer
+        sportLabel: Soccer
+        sex: mixte
+        fictional: true
+        colors: { primary: '#1a7a4c', secondary: '#e6f5ed' }
+        results:
+          - date: '2026-09-17'
+            opponent: Cougars
+            opponentCode: CEM
+            opponentInstitution: Cégep Édouard-Montpetit
+            home: true
+            scoreFor: 2
+            scoreAgainst: 2
+            result: D
+            sport: soccer
+            competition: RSEQ collégial
+          - date: '2026-09-10'
+            opponent: Dragons
+            opponentCode: SJR
+            opponentInstitution: Cégep Saint-Jean-sur-Richelieu
+            home: false
+            scoreFor: 0
+            scoreAgainst: 1
+            result: L
+            sport: soccer
+            competition: RSEQ collégial
+        nextGame:
+          date: '2026-09-20'
+          time: '16:00'
+          opponent: Barons
+          opponentCode: SLA
+          opponentInstitution: Champlain College Saint-Lambert
+          home: false
+          competition: RSEQ collégial
+      - id: demo-elans-soccer-f
+        name: Les Élans
+        code: SLHH
+        institution: Cégep de Saint-Louis-du-Ha! Ha!
+        sport: soccer
+        sportLabel: Soccer
+        sex: F
+        fictional: true
+        colors: { primary: '#156b42', secondary: '#e9f7ef' }
+        results:
+          - date: '2026-09-15'
+            opponent: Boomerang
+            opponentCode: GAR
+            opponentInstitution: Cégep François-Xavier-Garneau
+            home: true
+            scoreFor: 3
+            scoreAgainst: 1
+            result: W
+            sport: soccer
+            competition: RSEQ collégial
+          - date: '2026-09-08'
+            opponent: Gaulois
+            opponentCode: VAL
+            opponentInstitution: Cégep de Valleyfield
+            home: false
+            scoreFor: 0
+            scoreAgainst: 2
+            result: L
+            sport: soccer
+            competition: RSEQ collégial
+        nextGame:
+          date: '2026-10-08'
+          time: '15:30'
+          opponent: Titans
+          opponentCode: LIM
+          opponentInstitution: Cégep Limoilou
+          home: true
+          competition: RSEQ collégial
+      - id: demo-elans-hockey-m
+        name: Les Élans
+        code: SLHH
+        institution: Cégep de Saint-Louis-du-Ha! Ha!
+        sport: hockey
+        sportLabel: Hockey
+        sex: M
+        fictional: true
+        colors: { primary: '#0b3d91', secondary: '#dfe9f8' }
+        results:
+          - date: '2026-09-19'
+            opponent: Titans
+            opponentCode: LIM
+            opponentInstitution: Cégep Limoilou
+            home: true
+            scoreFor: 4
+            scoreAgainst: 3
+            result: W
+            sport: hockey
+            competition: RSEQ collégial
+          - date: '2026-09-12'
+            opponent: Boomerang
+            opponentCode: GAR
+            opponentInstitution: Cégep François-Xavier-Garneau
+            home: false
+            scoreFor: 1
+            scoreAgainst: 5
+            result: L
+            sport: hockey
+            competition: RSEQ collégial
+        nextGame:
+          date: '2026-09-20'
+          time: '20:00'
+          opponent: Géants
+          opponentCode: CSF
+          opponentInstitution: Cégep de Sainte-Foy
+          home: true
+          competition: RSEQ collégial
+      - id: demo-elans-hockey-f
+        name: Les Élans
+        code: SLHH
+        institution: Cégep de Saint-Louis-du-Ha! Ha!
+        sport: hockey
+        sportLabel: Hockey
+        sex: F
+        fictional: true
+        colors: { primary: '#0a4aad', secondary: '#e8f0fb' }
+        results:
+          - date: '2026-09-14'
+            opponent: Cheetahs
+            opponentCode: CAL
+            opponentInstitution: Cégep André-Laurendeau
+            home: false
+            scoreFor: 2
+            scoreAgainst: 3
+            result: L
+            sport: hockey
+            competition: RSEQ collégial
+          - date: '2026-09-07'
+            opponent: Cavaliers
+            opponentCode: CSL
+            opponentInstitution: Cégep de Saint-Laurent
+            home: true
+            scoreFor: 5
+            scoreAgainst: 2
+            result: W
+            sport: hockey
+            competition: RSEQ collégial
+        nextGame:
+          date: '2026-10-09'
+          time: '19:00'
+          opponent: Cougars
+          opponentCode: CEM
+          opponentInstitution: Cégep Édouard-Montpetit
+          home: true
+          competition: RSEQ collégial
+      - id: demo-elans-flag-x
+        name: Les Élans
+        code: SLHH
+        institution: Cégep de Saint-Louis-du-Ha! Ha!
+        sport: flag-football
+        sportLabel: Flag football
+        sex: mixte
+        fictional: true
+        colors: { primary: '#b45309', secondary: '#fef3e6' }
+        results:
+          - date: '2026-09-13'
+            opponent: Dragons
+            opponentCode: SJR
+            opponentInstitution: Cégep Saint-Jean-sur-Richelieu
+            home: true
+            scoreFor: 28
+            scoreAgainst: 21
+            result: W
+            sport: flag-football
+            competition: RSEQ collégial
+          - date: '2026-09-06'
+            opponent: Barons
+            opponentCode: SLA
+            opponentInstitution: Champlain College Saint-Lambert
+            home: false
+            scoreFor: 14
+            scoreAgainst: 24
+            result: L
+            sport: flag-football
+            competition: RSEQ collégial
+        nextGame:
+          date: '2026-09-20'
+          time: '17:00'
+          opponent: Gaulois
+          opponentCode: VAL
+          opponentInstitution: Cégep de Valleyfield
+          home: false
+          competition: RSEQ collégial
+      - id: demo-elans-flag-f
+        name: Les Élans
+        code: SLHH
+        institution: Cégep de Saint-Louis-du-Ha! Ha!
+        sport: flag-football
+        sportLabel: Flag football
+        sex: F
+        fictional: true
+        colors: { primary: '#c2410c', secondary: '#fff7ed' }
+        results:
+          - date: '2026-09-18'
+            opponent: Titans
+            opponentCode: LIM
+            opponentInstitution: Cégep Limoilou
+            home: true
+            scoreFor: 21
+            scoreAgainst: 14
+            result: W
+            sport: flag-football
+            competition: RSEQ collégial
+          - date: '2026-09-11'
+            opponent: Cheetahs
+            opponentCode: CAL
+            opponentInstitution: Cégep André-Laurendeau
+            home: false
+            scoreFor: 7
+            scoreAgainst: 28
+            result: L
+            sport: flag-football
+            competition: RSEQ collégial
+        nextGame:
+          date: '2026-10-10'
+          time: '16:30'
+          opponent: Boomerang
+          opponentCode: GAR
+          opponentInstitution: Cégep François-Xavier-Garneau
+          home: true
+          competition: RSEQ collégial
+  tools:
+    pomodoro: true
+    solitaire: true
+  overlayStrength: 0.38
+  textAlignment: left
+
+# Barre radio de LE-RADAR (module radio-barre.js), station chyz.
+radio:
+  enabled: true
+  station: chyz
+  theme: dark
+  position: top
+
+# Photos d’articles : l’algo stock propose une image de la banque locale
+# si la rédaction n’en soumet pas (ne remplace jamais une photo manuelle).
+media:
+  autoStockPhoto: true
+
+founded: '2026'
+license: CC-BY-SA-4.0
+
+# ---------------------------------------------------------------------------
+# Gouvernance — la partie qui décide si le journal existe encore dans cinq ans.
+# `kiosque sync` avertit tant qu'elle est incomplète.
+# ---------------------------------------------------------------------------
+governance:
+  # Une ORGANISATION, jamais un compte personnel.
+  owner: kiosque-demo
+  # L'entité permanente qui survit aux cohortes.
+  stewardEntity: Association étudiante du Cégep de Saint-Louis-du-Ha! Ha!
+  # Une adresse institutionnelle, pas celle d'une personne.
+  contact: redaction@lequorum.ca
+  repo: https://github.com/kiosque-demo/le-quorum
+  domainRegistrar: registraire-campus
+  domainExpiresAt: '2030-08-01T00:00:00Z'
+  # Deux personnes minimum, toujours.
+  recoveryContacts:
+    - redaction@lequorum.ca
+    - vie-etudiante@cegep-ha-ha.qc.ca
