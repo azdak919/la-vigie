@@ -50,7 +50,7 @@ jobs:
 
       # Une branche par version de l'amont : jamais de push forcé. Si elle
       # existe déjà, la proposition est déjà faite.
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
 
