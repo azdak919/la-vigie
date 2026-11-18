@@ -1,44 +1,44 @@
-# Valeurs produites par le configurateur KIOSQUE (packages/config-core).
-slug: "la-vigie"
-name: "La Vigie"
-tagline: "Journal étudiant FICTIF — test du Kiosque, aucun fait réel"
-institution: "Cégep fictif de Saint-Exemple"
-institutionType: "cegep"
-region: "Québec"
-lang: "fr-CA"
-# Qui publie : "Comité de rédaction de La Vigie"
-siteUrl: "https://azdak919.github.io/la-vigie"
-timeZone: "America/Toronto"
-noindex: true
-logo:
-  src: "/media/logo.png"
-  alt: "La Vigie"
+id: 3afdf975-4cc2-451f-8d3b-69d2cd4ab152
+slug: la-vigie
+name: La Vigie
+institution: Cégep fictif de Saint-Exemple
+institutionType: cegep
+lang: fr-CA
+siteUrl: https://azdak919.github.io/la-vigie
+timeZone: America/Toronto
 theme:
   accent: "#6c2163"
   accentDark: "#cf7ec1"
-  typography: "modern-accessible"
+  typography: modern-accessible
+governance:
+  owner: azdak919
+  stewardEntity: Cégep fictif de Saint-Exemple
+  contact: redaction@vigie.example
+  repo: https://github.com/azdak919/la-vigie
+radio:
+  enabled: false
+  theme: dark
+  position: top
+tagline: Journal étudiant FICTIF — test du Kiosque, aucun fait réel
+region: Québec
+founded: "2026"
+logo:
+  id: ac5b4770-15c7-4b8f-8b36-f80b016c0148
+  kind: image
+  src: /media/logo.png
+  alt: La Vigie
+  mime: image/png
 masthead:
   backgrounds:
     enabled: true
-    images: []
   weather:
     enabled: false
-    localities: []
   tools:
     pomodoro: true
     solitaire: true
-radio:
-  enabled: true
-  station: ""
-  theme: dark
-  position: top
-founded: "2026"
-license: CC-BY-SA-4.0
-governance:
-  owner: "azdak919"
-  stewardEntity: "Cégep fictif de Saint-Exemple"
-  contact: "redaction@vigie.example"
-  repo: "https://github.com/azdak919/la-vigie"
-  recoveryContacts:
-    - "releve-1@journal-exemple.invalid"
-    - "releve-2@journal-exemple.invalid"
+  overlayStrength: 0.55
+  textAlignment: left
+noindex: true
+media:
+  autoStockPhoto: false
+miroir: socle

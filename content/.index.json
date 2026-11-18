@@ -1,0 +1,44 @@
+{
+  "_comment": "Index dérivé, régénéré par `kiosque sync`. Reconstructible à 100 % depuis content/. Ne pas éditer à la main.",
+  "syncedAt": "2026-11-18T16:50:29.215Z",
+  "publication": "la-vigie",
+  "counts": {
+    "articles": 4,
+    "authors": 2,
+    "sections": 5
+  },
+  "articles": [
+    {
+      "id": "90ae66e7-5943-42ab-8496-a14d125fd25c",
+      "slug": "il-y-a-cinquante-ans-la-vigie-sortait-des-presses-du-sous-sol",
+      "status": "published",
+      "publishedAt": "2026-11-18T16:47:00.000Z",
+      "updatedAt": "2026-11-18T16:50:17.490Z",
+      "canonicalUrl": "https://azdak919.github.io/la-vigie/articles/il-y-a-cinquante-ans-la-vigie-sortait-des-presses-du-sous-sol/"
+    },
+    {
+      "id": "fa77dbe9-9588-406b-9b8e-dc7a4a0bb541",
+      "slug": "la-bibliotheque-ouvre-ses-portes-jusqu-a-22-h-pendant-la-fin-de-session",
+      "status": "published",
+      "publishedAt": "2026-11-18T16:47:00.000Z",
+      "updatedAt": "2026-11-18T16:50:10.225Z",
+      "canonicalUrl": "https://azdak919.github.io/la-vigie/articles/la-bibliotheque-ouvre-ses-portes-jusqu-a-22-h-pendant-la-fin-de-session/"
+    },
+    {
+      "id": "3a84d08b-9106-4239-bacd-724810fa4238",
+      "slug": "la-troupe-de-theatre-presente-une-creation-collective-en-decembre",
+      "status": "published",
+      "publishedAt": "2026-11-18T16:47:00.000Z",
+      "updatedAt": "2026-11-18T16:50:21.110Z",
+      "canonicalUrl": "https://azdak919.github.io/la-vigie/articles/la-troupe-de-theatre-presente-une-creation-collective-en-decembre/"
+    },
+    {
+      "id": "cfed53b2-9083-4bbf-80f5-5dc63fb9cba1",
+      "slug": "velo-libre-service-une-station-au-campus-des-le-printemps",
+      "status": "published",
+      "publishedAt": "2026-11-18T16:47:00.000Z",
+      "updatedAt": "2026-11-18T16:50:13.875Z",
+      "canonicalUrl": "https://azdak919.github.io/la-vigie/articles/velo-libre-service-une-station-au-campus-des-le-printemps/"
+    }
+  ]
+}
