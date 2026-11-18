@@ -1,13 +1,13 @@
 import type { KiosqueConfig } from './packages/pipeline/src/config.ts';
 
-/** Configuration de la vitrine amont et de sa démonstration Le Quorum. */
 const config: Partial<KiosqueConfig> = {
-  root: './examples/demo-journal',
-  source: { adapter: 'markdown' },
-  editorial: { mode: 'demo-local' },
-  deploy: { basePath: '/le-kiosque' },
-  demoNotice: 'Démonstration du Kiosque — journal étudiant fictif',
-  demoContent: true,
+  // Les articles s’écrivent dans le socle (serveur du journal) ; le site est publié par GitHub.
+  source: { adapter: 'socle', options: { baseUrl: "http://127.0.0.1:18820/journal/socle" } },
+  editorial: { mode: 'external' },
+  deploy: {
+    basePath: "/la-vigie",
+  },
+  demoContent: false,
   feedLimit: 30,
 };
 

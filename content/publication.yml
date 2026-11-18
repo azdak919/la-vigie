@@ -1,0 +1,44 @@
+# Valeurs produites par le configurateur KIOSQUE (packages/config-core).
+slug: "la-vigie"
+name: "La Vigie"
+tagline: "Journal étudiant FICTIF — test du Kiosque, aucun fait réel"
+institution: "Cégep fictif de Saint-Exemple"
+institutionType: "cegep"
+region: "Québec"
+lang: "fr-CA"
+# Qui publie : "Comité de rédaction de La Vigie"
+siteUrl: "https://azdak919.github.io/la-vigie"
+timeZone: "America/Toronto"
+noindex: true
+logo:
+  src: "/media/logo.png"
+  alt: "La Vigie"
+theme:
+  accent: "#6c2163"
+  accentDark: "#cf7ec1"
+  typography: "modern-accessible"
+masthead:
+  backgrounds:
+    enabled: true
+    images: []
+  weather:
+    enabled: false
+    localities: []
+  tools:
+    pomodoro: true
+    solitaire: true
+radio:
+  enabled: true
+  station: ""
+  theme: dark
+  position: top
+founded: "2026"
+license: CC-BY-SA-4.0
+governance:
+  owner: "azdak919"
+  stewardEntity: "Cégep fictif de Saint-Exemple"
+  contact: "redaction@vigie.example"
+  repo: "https://github.com/azdak919/la-vigie"
+  recoveryContacts:
+    - "releve-1@journal-exemple.invalid"
+    - "releve-2@journal-exemple.invalid"

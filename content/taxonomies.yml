@@ -1,0 +1,13 @@
+categories:
+  - name: "Actualités"
+    slug: "actualites"
+  - name: "Campus"
+    slug: "campus"
+  - name: "Culture"
+    slug: "culture"
+  - name: "Sports"
+    slug: "sports"
+  - name: "Opinion"
+    slug: "opinion"
+tags:
+  []
