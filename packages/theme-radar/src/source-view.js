@@ -81,14 +81,24 @@ function truncateExcerpt(value, role) {
 
 function imageMarkup(image, role) {
   if (!image?.src) return '';
-  const credit = [image.caption, image.credit && `Photo : ${image.credit}${image.license ? ` (${image.license})` : ''}`].filter(Boolean).map(escapeSourceViewHtml).join(' — ');
+  /* Légende et crédit dans deux span : sur les vignettes, la légende est
+     masquée (CSS) pour que le crédit « Photo : … » reste lisible en entier. */
+  const photo = image.credit ? `Photo : ${image.credit}${image.license ? ` (${image.license})` : ''}` : '';
+  const caption = image.caption ? String(image.caption) : '';
+  const credit = [
+    caption && `<span class="article-media-caption">${escapeSourceViewHtml(caption)}${photo ? ' — ' : ''}</span>`,
+    photo && `<span class="article-media-photo">${escapeSourceViewHtml(photo)}</span>`,
+  ].filter(Boolean).join('');
+  /* La une : chargée tout de suite et en priorité (sur téléphone, les vignettes
+     proches la ralentissaient : bloc gris vide le temps du chargement). */
   const loading = role === 'lead' ? 'eager' : 'lazy';
+  const priority = role === 'lead' ? ' fetchpriority="high"' : ' fetchpriority="low"';
   /*
    * Attributs width/height : utiles pour la une (réserve CLS au 16:9).
-   * Sur vignettes (feature/brief), on les omet — le ratio intrinsèque du
-   * JPEG (souvent 3:2 / 16:9) gagnait sur le carré CSS 1:1.
+   * Sur vignettes (feature/brief/suite du fil), on les omet — le ratio
+   * intrinsèque du JPEG (souvent 3:2 / 16:9) gagnait sur le CSS.
    */
-  const isThumb = role === 'feature' || role === 'brief';
+  const isThumb = role === 'feature' || role === 'brief' || role === 'tail';
   const width = !isThumb && Number.isFinite(Number(image.width)) ? ` width="${Number(image.width)}"` : '';
   const height = !isThumb && Number.isFinite(Number(image.height)) ? ` height="${Number(image.height)}"` : '';
   const x = Math.max(0, Math.min(100, Number(image.focalPoint?.x ?? 50)));
@@ -96,7 +106,9 @@ function imageMarkup(image, role) {
   /* onerror : retire la figure si 404 (IDB périmée / chemin mort) pour ne pas
      afficher l’alt brut en place de la vignette En bref. */
   const onErr = `onerror="const f=this.closest('figure');const a=this.closest('article');if(f)f.remove();if(a){a.classList.remove('has-image','article--thumb');}"`;
-  return `<figure class="article-media"><img src="${escapeSourceViewHtml(image.src)}" alt="${escapeSourceViewHtml(image.alt || '')}" loading="${loading}" decoding="async" style="object-position:${x}% ${y}%"${width}${height} ${onErr}>${credit ? `<figcaption class="article-media-credit">${credit}</figcaption>` : ''}</figure>`;
+  const srcset = image.srcset ? ` srcset="${escapeSourceViewHtml(image.srcset)}"` : '';
+  const sizes = image.sizes ? ` sizes="${escapeSourceViewHtml(image.sizes)}"` : '';
+  return `<figure class="article-media"><img src="${escapeSourceViewHtml(image.src)}"${srcset}${sizes} alt="${escapeSourceViewHtml(image.alt || '')}" loading="${loading}"${priority} decoding="async" style="object-position:${x}% ${y}%"${width}${height} ${onErr}>${credit ? `<figcaption class="article-media-credit">${credit}</figcaption>` : ''}</figure>`;
 }
 
 /**
@@ -137,12 +149,12 @@ export function renderSourceArticle(view, requestedRole = 'tail') {
   const date = String(view?.date?.iso || '');
   const dateLabel = escapeSourceViewHtml(view?.date?.label || '');
   const excerpt = truncateExcerpt(view?.excerpt, role);
-  const showImage = Boolean(view?.image?.src) && role !== 'tail';
+  const showImage = Boolean(view?.image?.src);
   const roleClasses = [
     'article',
     `article--${role}`,
     showImage ? 'has-image' : '',
-    showImage && (role === 'feature' || role === 'brief') ? 'article--thumb' : '',
+    showImage && (role === 'feature' || role === 'brief' || role === 'tail') ? 'article--thumb' : '',
     role === 'brief' ? 'article--compact' : '',
   ].filter(Boolean).join(' ');
   const articleLink = href ? `<a ${linkAttributesPrefix}href="${escapeSourceViewHtml(href)}">${title}</a>` : title;
@@ -158,7 +170,7 @@ export function renderSourceArticle(view, requestedRole = 'tail') {
   const colorStyle = color ? ` style="--c:${escapeSourceViewHtml(color)}"` : '';
 
   return `<article class="${roleClasses}"${colorStyle}>
-  ${role === 'lead' ? `<span class="article-eyebrow">${escapeSourceViewHtml(view?.leadEyebrow || 'À la une')}</span>` : ''}
+  ${role === 'lead' && view?.leadEyebrow ? `<span class="article-eyebrow">${escapeSourceViewHtml(view.leadEyebrow)}</span>` : ''}
   <div class="article-meta">
     ${section ? `<span class="article-section">${escapeSourceViewHtml(section)}</span>` : '<span class="article-section article-section--empty" aria-hidden="true"></span>'}
     ${dateLabel ? `<time class="article-time" datetime="${escapeSourceViewHtml(date)}">${dateLabel}</time>` : ''}
@@ -171,7 +183,9 @@ export function renderSourceArticle(view, requestedRole = 'tail') {
 }
 
 export const sourceViewRules = Object.freeze({
-  imageRoles: ['lead', 'feature', 'brief'],
-  noImageRoles: ['tail'],
+  /* Parité LE-RADAR : une photo reste sur la une, les vedettes, En bref
+     et la suite du fil. Sans photo, pas de case vide. */
+  imageRoles: ['lead', 'feature', 'brief', 'tail'],
+  noImageRoles: [],
   excerptLimits: EXCERPT_LIMITS,
 });

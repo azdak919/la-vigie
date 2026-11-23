@@ -260,7 +260,7 @@ test('le build démo écrit la page Mise à jour et l’admin y mène', async (t
   const admin = await readFile(path.join(outDir, 'admin/index.html'), 'utf8');
   assert.match(page, /Socle/);
   assert.match(page, /Kiosque/);
-  assert.match(page, /1\.0\.0/);
+  assert.match(page, /data-installed="socle">\d+\.\d+\.\d+</, "la version du socle épinglé est affichée");
   assert.match(page, /Aucune version proposée/);
   assert.match(admin, /href="\/admin\/mise-a-jour\/"/);
   assert.match(admin, /Tableau de bord/);
@@ -295,4 +295,15 @@ test('un journal créé depuis le gabarit ne publie que lui-même', async () => 
   const plateforme = await readFile(path.join(dir, 'maj-plateforme.yml'), 'utf8');
   assert.doesNotMatch(plateforme, /git merge upstream/, 'un dépôt « Use this template » ne partage pas d’historique avec l’amont');
   assert.match(plateforme, /maj-plateforme\.sh/);
+});
+
+test('un journal ne reçoit pas de propositions Dependabot', async () => {
+  const dir = path.join(ROOT, '.github/workflows');
+  const publier = await readFile(path.join(dir, 'publier.yml'), 'utf8');
+  assert.match(publier, /git rm -q \.github\/dependabot\.yml/, 'la première publication retire la configuration');
+  const auto = await readFile(path.join(dir, 'dependabot-automerge.yml'), 'utf8');
+  assert.match(auto, /github\.repository != 'azdak919\/le-kiosque' && github\.event\.workflow_run\.actor\.login == 'dependabot\[bot\]'/);
+  assert.match(auto, /gh pr close "\$pr"/, 'une proposition déjà ouverte est refermée');
+  const plateforme = await readFile(path.join(ROOT, 'tools/maj-plateforme.sh'), 'utf8');
+  assert.match(plateforme, /\|\.github\|/, 'la mise à jour de plateforme ne recopie pas .github/ (ni dependabot.yml)');
 });

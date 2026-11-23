@@ -29,7 +29,7 @@ test('configurer, rédiger, prévisualiser, publier, persister et exporter sans 
   test.setTimeout(240_000);
   const expectedMediaCount = demoSeedMediaCount();
   await page.goto('/autre-nom/configurer/');
-  await page.getByLabel('Nom du journal').fill('La Relève locale');
+  await page.locator('[data-key="name"]').fill('La Relève locale');
   await page.locator('[data-key="institution"]').fill('Cégep de démonstration');
   await page.getByRole('button', { name: 'Continuer' }).click();
   await page.locator('[data-key="accent"]').fill('#005a78');
@@ -37,13 +37,21 @@ test('configurer, rédiger, prévisualiser, publier, persister et exporter sans 
   await page.getByLabel('Typographie').selectOption('editorial-classic');
   await page.getByLabel('Logo facultatif').setInputFiles({ name: 'logo.svg', mimeType: 'image/svg+xml', buffer: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><circle cx="10" cy="10" r="9" fill="#005a78"/></svg>') });
   await expect(page.locator('#preview-logo')).toBeVisible();
+  // Le texte alternatif reste vide (exemple pâle) : le nom du journal en tient lieu.
+  await expect(page.locator('[data-key="logoAlt"]')).toHaveValue('');
+  await expect(page.locator('[data-key="logoAlt"]')).toHaveAttribute('placeholder', 'La Relève locale');
   await page.getByRole('button', { name: 'Continuer' }).click();
+  // Les sections ne sont plus préremplies : sans section, l'étape le signale ; on part des sections proposées.
+  await page.getByRole('button', { name: 'Terminer' }).click();
+  await expect(page.locator('section[data-step="3"] .step-error')).toHaveText('Gardez au moins une section.');
+  await page.getByRole('button', { name: 'Partir des sections proposées' }).click();
   await page.getByRole('button', { name: 'Terminer' }).click();
   await expect(page.getByRole('heading', { name: 'C’est prêt.' })).toBeVisible();
   await page.getByRole('link', { name: 'Ouvrir /admin/' }).click();
   await expect(page.getByText('Mode démonstration local — données conservées dans ce navigateur')).toBeVisible({ timeout: 45_000 });
   await expect(page.getByRole('heading', { name: 'Tableau de bord' })).toBeVisible({ timeout: 45_000 });
-  await expect(page.locator('#publication-name')).toHaveText('La Relève locale');
+  await expect(page.locator('.admin-brand').getByRole('img', { name: 'La Relève locale' })).toBeVisible();
+  await expect(page).toHaveTitle('Tableau de bord — La Relève locale');
 
   await page.locator('.admin-nav').getByRole('link', { name: 'Photos', exact: true }).click();
   // Banque démo = seed (pas un entier magique 50/51).
@@ -58,7 +66,7 @@ test('configurer, rédiger, prévisualiser, publier, persister et exporter sans 
   await page.getByLabel('Date et heure de publication').fill('2026-07-27T08:45');
   await page.getByLabel('Texte de l’article').fill('## Une vraie prévisualisation\n\nLe contenu demeure dans **ce navigateur**.');
   await page.getByLabel('Marie Tremblay').check();
-  await page.getByRole('button', { name: 'Choisir une photo' }).click();
+  await page.getByRole('button', { name: 'Choisir une photo de la banque' }).click();
   const articlePicker = page.locator('.media-picker');
   await articlePicker.getByLabel('Rechercher une photo (lieu, sujet, mot-clé)').fill('Limoilou');
   await articlePicker.getByRole('button', { name: 'Choisir cette photo' }).click();
@@ -76,9 +84,15 @@ test('configurer, rédiger, prévisualiser, publier, persister et exporter sans 
   await expect(front.locator('.publication-logo')).toBeVisible();
   await expect(front.locator('html')).toHaveAttribute('data-typography', 'editorial-classic');
   // La démo (sql.js) doit employer le même noyau de carte que le HTML statique :
-  // vignettes en bref, mais aucune image réintroduite dans la suite du fil.
+  // vignettes en bref et, comme sur LE-RADAR, dans la suite du fil quand
+  // l’article a une photo. Sans photo, pas de case vide.
   await expect(front.locator('article.article--brief.has-image .article-media').first()).toBeVisible();
-  await expect(front.locator('article.article--tail .article-media')).toHaveCount(0);
+  await expect(front.locator('article.article--tail.has-image .article-media').first()).toBeVisible();
+  const tailsSansPhoto = front.locator('article.article--tail:not(.has-image)');
+  const nSans = await tailsSansPhoto.count();
+  for (let i = 0; i < nSans; i += 1) {
+    await expect(tailsSansPhoto.nth(i).locator('.article-media')).toHaveCount(0);
+  }
   await expect(front.getByText('Un article créé dans le navigateur')).toHaveCount(0);
 
   await row.getByRole('button', { name: 'Modifier' }).click();
@@ -118,21 +132,29 @@ test('configurer, rédiger, prévisualiser, publier, persister et exporter sans 
   // Import banque + sql.js : long en CI. Le toast (#toast) est éphémère (CSS/timing) —
   // attendre le bouton redevenu utilisable puis les exemples en liste.
   await expect(page.getByRole('button', { name: 'Restaurer Le Quorum' })).toBeEnabled({ timeout: 90_000 });
-  await expect(page.locator('#publication-name')).toHaveText('La Relève locale');
+  await expect(page.locator('.admin-brand').getByRole('img', { name: 'La Relève locale' })).toBeVisible();
   await page.locator('.admin-nav').getByRole('link', { name: 'Articles', exact: true }).click();
   await expect(page.getByText('Exemple local').first()).toBeVisible({ timeout: 60_000 });
 
   await page.locator('.admin-nav').getByRole('link', { name: 'Configuration', exact: true }).click();
-  await page.getByRole('button', { name: 'Choisir une photo' }).click();
+  // Socle 1.4.2 : le mât prend plusieurs photos. On vide la liste héritée du
+  // Quorum, puis on retient McGill seule, pour qu’elle reste en tête.
+  await page.getByRole('button', { name: 'Retirer toutes les images' }).click();
+  await page.getByRole('button', { name: 'Choisir des photos' }).click();
   const mastheadPicker = page.locator('.media-picker');
   await mastheadPicker.getByLabel('Rechercher une photo (lieu, sujet, mot-clé)').fill('McGill');
   await mastheadPicker.getByRole('button', { name: 'Choisir cette photo' }).first().click();
+  await mastheadPicker.getByRole('button', { name: 'Utiliser ces photos' }).click();
   await page.getByLabel('Cadrage horizontal').fill('73');
   await page.getByLabel('Cadrage vertical').fill('42');
   await page.getByRole('button', { name: 'Enregistrer' }).click();
-  await expect(front.locator('.masthead-background')).toHaveAttribute('src', /mcgill-(roddick|campus|arts)\.jpg/);
+  // Le manifeste retient McGill en tête ; l’image peinte peut être une autre
+  // des photos retenues si l’ordre aléatoire est actif (plusieurs photos).
+  await expect(front.locator('.masthead-background')).toHaveAttribute('src', /\/media\/.+\.(jpe?g|webp)$/i);
+  const mastheadPayload = JSON.parse(await front.locator('#masthead-backgrounds').textContent());
+  expect(mastheadPayload.images[0].src).toMatch(/mcgill-(roddick|campus|arts)\.jpg/);
 
-  await page.locator('.admin-nav').getByRole('link', { name: 'Exporter et poursuivre', exact: true }).click();
+  await page.locator('.admin-nav').getByRole('link', { name: 'Exporter', exact: true }).click();
   const jsonEvent = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Télécharger la sauvegarde JSON' }).click();
   const jsonDownload = await jsonEvent;
@@ -155,7 +177,7 @@ test('configurer, rédiger, prévisualiser, publier, persister et exporter sans 
   await page.getByRole('button', { name: 'Réinitialiser Le Quorum' }).click();
   // Reset complet + rechargement sql.js de la banque démo : long sur CI.
   await expect(page.getByRole('heading', { name: 'Tableau de bord' })).toBeVisible({ timeout: 60_000 });
-  await page.locator('.admin-nav').getByRole('link', { name: 'Exporter et poursuivre', exact: true }).click();
+  await page.locator('.admin-nav').getByRole('link', { name: 'Exporter', exact: true }).click();
   const chooser = page.waitForEvent('filechooser');
   await page.getByRole('button', { name: 'Importer une sauvegarde' }).click();
   // Le handler de fichier est asynchrone : attendre explicitement le dialogue
@@ -194,7 +216,7 @@ test('la page Mise à jour garde la coquille de l’admin et y ramène', async (
   await page.goto('/autre-nom/admin/');
   // Un clic avant l’ouverture de la base ne doit plus figer l’admin.
   await page.locator('.admin-nav').getByRole('link', { name: 'Photos', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Photos', level: 2 })).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByRole('heading', { name: 'Photos', level: 1 })).toBeVisible({ timeout: 60_000 });
   await expect(page).toHaveURL(/\/admin\/#media$/);
   await page.locator('.admin-nav').getByRole('link', { name: 'Mise à jour' }).click();
   await expect(page).toHaveURL(/\/autre-nom\/admin\/mise-a-jour\/$/);
@@ -203,13 +225,13 @@ test('la page Mise à jour garde la coquille de l’admin et y ramène', async (
   await expect(page.locator('.update-line')).toHaveCount(2);
   await page.locator('.admin-nav').getByRole('link', { name: 'Articles', exact: true }).click();
   await expect(page).toHaveURL(/\/admin\/#articles$/);
-  await expect(page.getByRole('heading', { name: 'Articles', level: 2 })).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByRole('heading', { name: 'Articles', level: 1 })).toBeVisible({ timeout: 60_000 });
 });
 
 test('l’éditeur programme et archive un article', async ({ page }) => {
   test.setTimeout(120_000);
   await page.goto('/autre-nom/admin/#articles');
-  await expect(page.getByRole('heading', { name: 'Articles', level: 2 })).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByRole('heading', { name: 'Articles', level: 1 })).toBeVisible({ timeout: 60_000 });
   await page.getByRole('button', { name: 'Nouvel article' }).click();
   await page.getByLabel('Titre').fill('Article programmé');
   await page.getByLabel('Adresse de l’article').fill('article-programme');

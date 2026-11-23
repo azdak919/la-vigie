@@ -1,0 +1,37 @@
+LE KIOSQUE — paquet complet d'un journal étudiant (site du journal + rédaction)
+
+1. Il faut PHP 8.1 ou plus avec SQLite (pdo_sqlite) et un serveur Apache ou LiteSpeed
+   (les fichiers .htaccess) : c'est le cas chez presque tous les hébergeurs mutualisés.
+   Sur nginx seul, les .htaccess sont ignorés : demandez au service informatique de
+   fermer donnees/ et php/ et d'envoyer le reste à index.php.
+2. Décompressez le ZIP : vous obtenez un dossier kiosque-journal/. Déposez le
+   CONTENU de ce dossier (pas le dossier lui-même) à la racine de votre espace
+   web (gestionnaire de fichiers, FTP ou SFTP), par exemple dans public_html/
+   ou www/, avec les fichiers cachés (.htaccess, .user.ini). Le fichier
+   INSTALLER-A-LA-RACINE.txt le rappelle. Si une page d'accueil de l'hébergeur
+   s'y trouve déjà (index.html), remplacez-la. Pour installer dans un
+   sous-dossier, déposez le même contenu dans ce dossier : le programme détecte
+   le préfixe tout seul, sans casser les liens.
+3. Ouvrez tout de suite https://votre-journal.com/redaction/ et remplissez l'assistant
+   d'installation : nom du journal, couleur, logo, sections, options, votre nom,
+   le compte administrateur (courriel + mot de passe de 10 caractères ou plus)
+   et le code d'installation. Ce code se trouve dans le fichier
+   donnees/code-installation.txt, sur le serveur (il est créé à la première
+   ouverture de la page). Sans ce code, personne ne peut créer le compte.
+4. Le journal est à https://votre-journal.com/ ; tout se change ensuite dans
+   « Configuration ». Aucun dépôt GitHub n'est nécessaire.
+
+Les données (articles, photos, comptes) sont dans donnees/. Ce dossier est fermé
+au public (fichier .htaccess). Si vous essayez le journal sur votre ordinateur
+avec le serveur intégré de PHP, lancez-le depuis le dossier du journal :
+  php -S 127.0.0.1:8080 routeur.php
+Sans ce fichier routeur.php, la base pourrait être téléchargeable. Les pages
+« Sauvegarde » et « Mise à jour » de la rédaction passent aussi par ce routeur.
+
+Sauvegarde : dans la rédaction, Sauvegarde → Télécharger la sauvegarde complète.
+Mise à jour : dans la rédaction, Mise à jour → Vérifier s'il y a une nouvelle version.
+
+Dernière version, toujours à la même adresse (sans compte GitHub) :
+  https://github.com/azdak919/le-kiosque/releases/latest/download/kiosque-journal.zip
+À la main : faites une sauvegarde, puis envoyez les nouveaux fichiers par-dessus
+les anciens SANS remplacer donnees/ (vos articles, photos et comptes y sont).

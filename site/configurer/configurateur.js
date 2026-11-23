@@ -27,7 +27,8 @@ const initial = K.completer({
   institution: '',
   accent: pub.accent || '#6c2163',
   accentDark: pub.accentDark,
-  sections: K.SECTIONS_PROPOSEES.join('\n'),
+  // Les sections proposées restent un exemple (placeholder) : rien n'est gardé sans qu'on l'écrive.
+  sections: '',
   demoContent: false,
 });
 
@@ -35,6 +36,8 @@ let saved = {};
 try { saved = JSON.parse(localStorage.getItem(storageKey) || '{}'); } catch {}
 if (saved._version !== 3) saved = {}; // ancien configurateur en 12 étapes : on repart proprement
 let state = { ...initial, ...saved };
+// Jamais de logo fabriqué (cercle aux initiales). Un vrai logo vient d’un fichier téléversé.
+if (state.logo?.src && isGeneratedInitialsLogoSrc(state.logo.src)) delete state.logo;
 let step = Math.min(TOTAL, Math.max(1, Number(saved._step) || 1));
 let accentDarkManuel = Boolean(saved._accentDarkManuel);
 
@@ -45,6 +48,24 @@ const steps = [...form.querySelectorAll('.config-step')];
 const stepItems = [...document.querySelectorAll('#steps-list li')];
 const actualKey = (k) => (k === 'accentText' ? 'accent' : k === 'accentDarkText' ? 'accentDark' : k);
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+function isGeneratedInitialsLogoSrc(src) {
+  const match = /^data:image\/png;base64,([A-Za-z0-9+/]+=*)/i.exec(String(src || ''));
+  if (!match) return false;
+  let bytes;
+  try {
+    const bin = atob(match[1]);
+    if (bin.length > 32 * 1024) return false;
+    bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  } catch { return false; }
+  if (bytes.length < 33 || bytes[0] !== 137 || bytes[1] !== 80 || bytes[2] !== 78 || bytes[3] !== 71) return false;
+  const u32 = (o) => ((bytes[o] << 24) | (bytes[o + 1] << 16) | (bytes[o + 2] << 8) | bytes[o + 3]) >>> 0;
+  if (u32(8) !== 13 || bytes[12] !== 0x49 || bytes[13] !== 0x48 || bytes[14] !== 0x44 || bytes[15] !== 0x52) return false;
+  const width = u32(16), height = u32(20);
+  return width === height && [256, 512, 1024].includes(width) && bytes[24] === 8 && bytes[25] === 6;
+}
+
 
 function save() {
   try {
@@ -66,7 +87,7 @@ function updatePreview() {
   const c = K.completer(state);
   const prev = $('live-preview');
   prev.style.setProperty('--preview-accent', c.accent);
-  $('preview-name').textContent = c.name;
+  $('preview-name').textContent = c.name || 'Nom du journal';
   $('preview-institution').textContent = state.institution || 'Établissement';
   $('preview-tagline').textContent = c.tagline || '';
   const sections = K.lireSections(state.sections);
@@ -114,7 +135,7 @@ for (const f of fields) {
   const onInput = () => {
     const k = actualKey(f.dataset.key);
     state[k] = f.type === 'checkbox' ? f.checked : f.value;
-    if (k === 'name') { if (!saved.slug) state.slug = K.slugify(state.name); state.logoAlt = state.name; }
+    if (k === 'name') showExamples();
     if (k === 'accentDark') accentDarkManuel = true;
     if (k === 'accent' && !accentDarkManuel) state.accentDark = K.couleurSombre(state.accent);
     fillFields();
@@ -126,6 +147,19 @@ for (const f of fields) {
   f.addEventListener('change', onInput);
 }
 
+// Le nom court et le texte alternatif suivent le nom en exemple pâle ; vides, ils en sont déduits.
+function showExamples() {
+  form.querySelector('[data-key="slug"]').placeholder = state.name ? K.slugify(state.name) : 'la-vigie';
+  form.querySelector('[data-key="logoAlt"]').placeholder = state.name || 'La Vigie';
+}
+$('config-sections').placeholder = K.SECTIONS_PROPOSEES.join('\n');
+$('sections-proposees').addEventListener('click', () => {
+  if (String(state.sections || '').trim() && !window.confirm('Remplacer les sections déjà écrites par les sections proposées?')) return;
+  state.sections = K.SECTIONS_PROPOSEES.join('\n');
+  fillFields(); updatePreview(); showErrors([]); save();
+});
+showExamples();
+
 const logoInput = $('config-logo');
 logoInput.addEventListener('change', () => {
   const file = logoInput.files?.[0];
@@ -134,6 +168,7 @@ logoInput.addEventListener('change', () => {
   const limit = file.type === 'image/svg+xml' ? 512 * 1024 : 2 * 1024 * 1024;
   if (!ok || file.size > limit) { window.alert('Ce logo est trop lourd ou utilise un format non pris en charge.'); logoInput.value = ''; return; }
   const keep = (src) => {
+    // Uniquement un fichier choisi par la rédaction : on ne dessine jamais d’initiales.
     state.logo = { id: crypto.randomUUID(), kind: 'image', src, alt: state.logoAlt || state.name, mime: file.type, source: { backend: 'configurateur', backendId: file.name, fetchedAt: new Date().toISOString() } };
     updatePreview(); save();
   };

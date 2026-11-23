@@ -37,6 +37,8 @@ import {
   homePage,
   page,
   redirectPage,
+  revuePage,
+  searchPage,
   sectionPage,
   sportsResultsPage,
   esc,
@@ -49,20 +51,25 @@ import { renderCmsConfig, repoSlug } from './cms-config.ts';
 import { sanitizeHtml } from './sanitize.ts';
 import { normalizeBasePath, type KiosqueConfig } from './config.ts';
 import { readIndex } from './mirror.ts';
+import { isGeneratedInitialsLogo } from '../../theme-radar/src/generated-logo.js';
+import { inflateSync } from 'node:zlib';
 
 const THEME_ASSETS = path.resolve(
   fileURLToPath(new URL('../../theme-radar/assets', import.meta.url)),
 );
 const MARKED_BROWSER = path.resolve(fileURLToPath(new URL('../../../node_modules/marked/lib/marked.esm.js', import.meta.url)));
 
-async function copyDemoRuntime(outDir: string): Promise<void> {
+async function copyDemoRuntime(outDir: string, live = false): Promise<void> {
   const editorialDir = path.join(outDir, 'assets', 'editorial');
   await mkdir(editorialDir, { recursive: true });
   // Le même noyau de carte est exécuté par les gabarits statiques et par la
   // démo en mode navigateur. Il vit côté thème, puis est copié explicitement dans le
   // runtime navigateur — jamais recopié à la main dans render.js.
   await cp(path.resolve(THEME_ASSETS, '..', 'src', 'source-view.js'), path.join(editorialDir, 'source-view.js'));
+  await cp(path.resolve(THEME_ASSETS, '..', 'src', 'generated-logo.js'), path.join(editorialDir, 'generated-logo.js'));
   await cp(path.resolve(THEME_ASSETS, '..', 'src', 'radio.js'), path.join(editorialDir, 'radio.js'));
+  await cp(path.resolve(THEME_ASSETS, '..', 'src', 'social.js'), path.join(editorialDir, 'social.js'));
+  await cp(path.resolve(THEME_ASSETS, '..', 'src', 'home-rail.js'), path.join(editorialDir, 'home-rail.js'));
   await cp(MARKED_BROWSER, path.join(editorialDir, 'marked.esm.js')).catch(() => {
     throw new Error('Module navigateur marked absent. Relancer « npm ci » avant le build.');
   });
@@ -72,6 +79,8 @@ async function copyDemoRuntime(outDir: string): Promise<void> {
   // copie. marked reste celui du Kiosque (même version, aussi lu par front.js).
   for (const file of SOCLE_ADMIN_ASSETS) {
     if (file === 'marked.esm.js') continue;
+    // Site vivant du paquet complet : ni base de démonstration ni sql.js.
+    if (live && /^sql-wasm|^sqljs-db|^demo-backend/.test(file)) continue;
     await cp(socleAdminAsset(file), path.join(editorialDir, file)).catch(() => {
       throw new Error(`Admin du socle absente : ${file}. Relancer « npm ci » avant le build.`);
     });
@@ -153,7 +162,7 @@ marked.setOptions({ gfm: true, breaks: false });
 
 /**
  * Préfixe les chemins racine `/media/…` avec le basePath de déploiement
- * (ex. `/le-kiosque/demo`) pour que les photos du corps d’article se chargent
+ * (ex. `/mon-journal/demo`) pour que les photos du corps d’article se chargent
  * sous un sous-chemin GitHub Pages.
  */
 function rewriteBodyMediaUrls(html: string, basePath: string): string {
@@ -285,15 +294,26 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
   const log = options.logger ?? { info: () => {}, warn: () => {} };
   const basePath = normalizeBasePath(config.deploy?.basePath);
   const editorialMode = config.editorial?.mode ?? 'git-sveltia';
+  const live = editorialMode === 'socle-vivant';
+  const browserRendered = editorialMode === 'demo-local' || live;
   const editorialAssetsBase = `${basePath}/assets/editorial`;
   const databaseKey = `kiosque-${basePath.replace(/[^a-z0-9]+/gi, '-') || 'root'}-${bundle.publication.slug}`;
-  // Un logo-emblème (carré, rond) ne dit pas le nom : le gabarit l'écrit à côté.
+  // Un monogramme d'initiales généré n'est pas un logo : on l'ignore et le mât montre le nom.
   const logo = bundle.publication.logo;
-  if (logo?.src?.startsWith('/media/') && !(logo.width && logo.height)) {
-    const size = await readFile(path.join(config.root, logo.src)).then((bytes) => imageSize(bytes)).catch(() => null);
-    if (size) bundle.publication.logo = { ...logo, ...size };
+  if (logo?.src) {
+    let logoBytes;
+    if (logo.src.startsWith('/media/')) {
+      logoBytes = await readFile(path.join(config.root, logo.src)).catch(() => undefined);
+      if (logoBytes && !(logo.width && logo.height)) {
+        const size = imageSize(logoBytes);
+        if (size) bundle.publication.logo = { ...logo, ...size };
+      }
+    }
+    if (isGeneratedInitialsLogo(bundle.publication.logo, logoBytes, inflateSync)) {
+      bundle.publication.logo = undefined;
+    }
   }
-  const publicationForRender = editorialMode === 'demo-local' ? bundle.publication : {
+  const publicationForRender = browserRendered ? bundle.publication : {
     ...bundle.publication,
     masthead: bundle.publication.masthead ? {
       ...bundle.publication.masthead,
@@ -330,13 +350,15 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
     taxonomies: bundle.taxonomies,
     authorsBySlug: new Map(bundle.authors.map((a) => [a.slug, a])),
     demoNotice: config.demoNotice,
+    demoEditorialEntry: config.demoEditorialEntry === true,
     buildYear: new Date().getUTCFullYear(),
-    editorial: editorialMode === 'demo-local' ? {
-      mode: 'demo-local',
+    editorial: browserRendered ? {
+      mode: live ? 'socle-vivant' : 'demo-local',
       assetsBase: editorialAssetsBase,
       seedUrl: `${editorialAssetsBase}/seed.json`,
       databaseKey,
     } : undefined,
+    redactionHref: config.editorial?.redactionHref,
   };
 
   const base = bundle.publication.siteUrl.replace(/\/+$/, '');
@@ -345,7 +367,7 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
 
   // Accueil
   await emit(outDir, '/', homePage(listed, ctx));
-  if (editorialMode === 'demo-local') {
+  if (browserRendered) {
     await writeFile(
       path.join(outDir, '404.html'),
       homePage(listed, ctx).replace(
@@ -445,6 +467,13 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
     pages++;
   }
 
+  await emit(outDir, '/recherche/', searchPage(listed, ctx));
+  urls.push({ loc: `${base}/recherche/` });
+  pages++;
+  await emit(outDir, '/revue/', revuePage(listed, ctx));
+  urls.push({ loc: `${base}/revue/` });
+  pages++;
+
   // Plan du site lisible par un humain — c'est aussi la porte d'entrée d'une
   // reprise : on y voit tout ce que le journal contient.
   await emit(
@@ -459,6 +488,8 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
         ${sportsCfg && sportsCfg.enabled !== false && sportsTeams.length
           ? `<li><a href="${basePath}/sports/">Au tableau</a> — scores et prochains matchs</li>`
           : ''}
+        <li><a href="${basePath}/recherche/">Recherche</a></li>
+        <li><a href="${basePath}/revue/">Revue</a> — édition à imprimer</li>
         ${listed.map((a) => `<li><a href="${basePath}/articles/${esc(a.slug)}/">${esc(a.title)}</a></li>`).join('\n        ')}
       </ul>
     </div>`,
@@ -573,16 +604,21 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
     filter: (src) => {
       const name = path.basename(src);
       if (name === 'admin') return false;
-      if (editorialMode !== 'demo-local' && name === 'editorial') return false;
+      if (!browserRendered && name === 'editorial') return false;
       return true;
     },
   });
+  if (live) {
+    await copyDemoRuntime(outDir, true);
+    // Le socle PHP reconnaît le site vivant à ce fichier (coquille pour les adresses d'article).
+    await writeFile(path.join(outDir, 'kiosque-vivant.json'), `${JSON.stringify({ format: 'kiosque-vivant', version: 1 })}\n`, 'utf8');
+  }
   if (editorialMode === 'demo-local') {
     await copyDemoRuntime(outDir);
     await writeFile(path.join(outDir, 'assets', 'editorial', 'seed.json'), JSON.stringify({
       // Bump version when demo authors/media/articles change so the browser demo
       // re-hydrates unmodified demo rows (portraits, lead photos, etc.).
-      format: 'kiosque-demo-seed', version: 26,
+      format: 'kiosque-demo-seed', version: 27,
       publication: { ...bundle.publication, theme: { ...bundle.publication.theme, typography: bundle.publication.theme.typography ?? 'modern-accessible' } },
       articles: bundle.articles.map((article) => ({ ...article, isDemo: true, isUserModified: false })),
       authors: bundle.authors.map((author) => ({ ...author, isDemo: true, isUserModified: false })),

@@ -23,8 +23,12 @@ import {
   type Taxonomies,
 } from '../../core/src/model.ts';
 import { renderSourceArticle } from './source-view.js';
+import { usablePublicationLogo } from './generated-logo.js';
+import { inflateSync } from 'node:zlib';
 import { radioBarHtml } from './radio.js';
-import { pruneSportsPayload } from './sports-freshness.js';
+import { socialNavHtml } from './social.js';
+import { homeRailHtml } from './home-rail.js';
+import { officialSportsUrl, pruneSportsPayload, sportsSexLabel } from './sports-freshness.js';
 
 export interface RenderContext {
   publication: Publication;
@@ -38,15 +42,25 @@ export interface RenderContext {
   authorsBySlug: Map<string, Author>;
   /** Bandeau « démonstration » affiché en tête de chaque page. */
   demoNotice?: string;
+  /**
+   * Accès explicite à l’espace de rédaction, seulement si le drapeau de
+   * démo est activé. Un vrai journal ne le pose jamais.
+   */
+  demoEditorialEntry?: boolean;
   /** Année de génération, pour le pied de page. */
   buildYear: number;
   /** Active uniquement pour la démonstration éditoriale navigateur. */
   editorial?: {
-    mode: 'demo-local';
+    mode: 'demo-local' | 'socle-vivant';
     assetsBase: string;
     seedUrl: string;
     databaseKey: string;
   };
+  /**
+   * Lien du pied « Espace de rédaction ». Absent : `<basePath>/redaction/`,
+   * comme sur un vrai journal. La vitrine le pose sur `/admin/`.
+   */
+  redactionHref?: string;
 }
 
 export interface MastheadOptions {
@@ -65,6 +79,79 @@ function clampPercent(value: number | undefined): number {
   return Number.isFinite(value) ? Math.min(100, Math.max(0, value!)) : 50;
 }
 
+/** Ligne sous le nom dans le pied de page, sans tiret orphelin quand un morceau manque. */
+function footSignature(pub: { institution?: string; founded?: string; tagline?: string }): string {
+  const where = [pub.institution, pub.founded ? `depuis ${pub.founded}` : ''].filter(Boolean).join(' · ');
+  return [where, pub.tagline].filter(Boolean).join(' — ');
+}
+
+/** Licence CC proposée dans la configuration (sinon : « Tous droits réservés »). */
+const CC_BY_NC_ND_URL = 'https://creativecommons.org/licenses/by-nc-nd/4.0/deed.fr';
+
+/** Années du droit d'auteur : l'année courante, ou « fondation–année courante ». */
+export function footYears(founded: string | undefined, year: number): string {
+  const start = Number(/\d{4}/.exec(String(founded ?? ''))?.[0]);
+  return start && start < year ? `${start}–${year}` : String(year);
+}
+
+/** Licence des contenus du journal, en HTML : « Tous droits réservés. » par défaut. */
+export function footRights(license: string | undefined): string {
+  const value = String(license ?? '').trim();
+  if (!value || /^tous droits réservés\.?$/i.test(value)) return 'Tous droits réservés.';
+  if (/by-nc-nd/i.test(value)) return `Contenus sous licence <a href="${CC_BY_NC_ND_URL}" rel="license noopener">CC BY-NC-ND 4.0</a>.`;
+  return `Contenus sous licence ${esc(value)}.`;
+}
+
+/** Première ligne du bas de page : « © 2026 La Vigie. Tous droits réservés. » */
+export function footCopyright(pub: { name?: string; founded?: string; license?: string }, year: number): string {
+  const name = String(pub.name ?? '').trim();
+  return `© ${footYears(pub.founded, year)}${name ? ` ${esc(name)}` : ''}. ${footRights(pub.license)}`;
+}
+
+/** Page de présentation du Kiosque, liée au bas de chaque page publique (seul endroit à changer). */
+export const KIOSQUE_SITE_URL = 'https://kiosque.le-radar.ca/';
+
+const POWERED_BY = `Propulsé par <a href="${KIOSQUE_SITE_URL}" rel="noopener">Le Kiosque</a>, plateforme libre sous licence GNU AGPLv3 pour les journaux étudiants.`;
+
+/** Accès explicite à l’espace de rédaction : drapeau de démo et mode local. */
+export function showDemoEditorialEntry(ctx: Pick<RenderContext, 'demoEditorialEntry' | 'editorial'>): boolean {
+  return ctx.demoEditorialEntry === true && ctx.editorial?.mode === 'demo-local';
+}
+
+const DEMO_EDITORIAL_FULL = 'Essayer l’espace de rédaction (démo)';
+const DEMO_EDITORIAL_SHORT = 'Espace de rédaction (démo)';
+
+/** Libellé du pied : explicite sur la démo, discret sur un vrai journal. */
+export function footRedactionLabel(demoEntry = false): string {
+  return demoEntry
+    ? `<span class="site-foot__redaction-full">${DEMO_EDITORIAL_FULL}</span><span class="site-foot__redaction-short">${DEMO_EDITORIAL_SHORT}</span>`
+    : 'Espace de rédaction';
+}
+
+/** Ligne du bas : mention Propulsé par, puis un lien vers l’espace de rédaction. */
+export function footBuiltHtml(redactionHref: string, demoEntry = false): string {
+  const attrs = demoEntry ? ` aria-label="${DEMO_EDITORIAL_FULL}"` : '';
+  return `<span class="site-foot__powered">${POWERED_BY}</span> <span class="site-foot__sep" aria-hidden="true">·</span> <a class="site-foot__redaction" href="${esc(redactionHref)}"${attrs}>${footRedactionLabel(demoEntry)}</a>`;
+}
+
+/** Pastille d’accent du mât, uniquement quand le drapeau de démo est activé. */
+export function mastheadDemoEditorialHtml(ctx: RenderContext): string {
+  if (!showDemoEditorialEntry(ctx)) return '';
+  const href = esc(ctx.redactionHref ?? asset('/admin/', ctx));
+  return `<a class="masthead-demo-editorial" href="${href}" aria-label="${DEMO_EDITORIAL_FULL}">` +
+    `<svg class="masthead-demo-editorial__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>` +
+    `<span class="masthead-demo-editorial__full">${DEMO_EDITORIAL_FULL}</span>` +
+    `<span class="masthead-demo-editorial__short">${DEMO_EDITORIAL_SHORT}</span>` +
+    `</a>`;
+}
+
+/** L'organisme responsable, sauf s'il répète ce que le pied de page dit déjà. */
+function footSteward(pub: { name?: string; institution?: string; governance: { stewardEntity?: string } }): string {
+  const steward = String(pub.governance.stewardEntity || '').trim();
+  // Ni le nom du journal ni l'établissement, déjà écrits juste au-dessus.
+  return steward && steward !== String(pub.name || '').trim() && steward !== String(pub.institution || '').trim() ? steward : '';
+}
+
 export function mastheadOptions(publication: Publication): MastheadOptions {
   const images = publication.masthead?.backgrounds?.enabled === false
     ? [] : (publication.masthead?.backgrounds?.images ?? []);
@@ -75,7 +162,7 @@ export function mastheadOptions(publication: Publication): MastheadOptions {
     name: publication.name,
     signature: publication.tagline,
     institution: publication.institution,
-    logo: publication.logo,
+    logo: usablePublicationLogo(publication.logo, undefined, inflateSync),
     image,
     backgroundPosition: `${clampPercent(focal?.x)}% ${clampPercent(focal?.y)}%`,
     overlayStrength: Number.isFinite(overlay) ? Math.min(0.9, Math.max(0, overlay!)) : 0.55,
@@ -163,6 +250,38 @@ function asset(path: string, ctx: RenderContext): string {
   return `${ctx.basePath}${path}`;
 }
 
+
+type ResponsiveImage = {
+  src: string;
+  width?: number;
+  height?: number;
+  variants?: Array<{ src: string; width: number; height: number }>;
+};
+
+const SIZES_CARD = '(max-width: 40rem) 100vw, (max-width: 70rem) 50vw, 22rem';
+const SIZES_LEAD_CARD = '(max-width: 40rem) 100vw, 45rem';
+const SIZES_POST = '(max-width: 40rem) 100vw, 70rem';
+const SIZES_MASTHEAD = '100vw';
+
+/** srcset des miniatures du Socle (480, 960, 1600) plus l’original. */
+export function responsiveAttrs(image: ResponsiveImage, ctx: RenderContext, sizes: string): { src: string; srcset?: string; sizes?: string } {
+  const src = safeUrl(asset(image.src, ctx));
+  const variants = image.variants ?? [];
+  if (!variants.length) return { src };
+  const originalWidth = image.width ?? Math.max(2400, ...variants.map((item) => item.width));
+  const srcset = [
+    ...variants.map((item) => `${safeUrl(asset(item.src, ctx))} ${item.width}w`),
+    `${src} ${originalWidth}w`,
+  ].join(', ');
+  return { src, srcset, sizes };
+}
+
+function srcsetHtml(attrs: { src: string; srcset?: string; sizes?: string }): string {
+  const srcset = attrs.srcset ? ` srcset="${esc(attrs.srcset)}"` : '';
+  const sizes = attrs.sizes ? ` sizes="${esc(attrs.sizes)}"` : '';
+  return `src="${attrs.src}"${srcset}${sizes}`;
+}
+
 /**
  * Couleur du journal en mode sombre, que le mode vienne du bouton ou du
  * système : sans la seconde règle, le violet de démonstration de tokens.css
@@ -174,17 +293,17 @@ function darkAccent(color: string): string {
 }
 
 /**
- * Logo du mât. Un logo large (un nom dessiné) remplace le nom ; un emblème
- * (presque carré : moins de 1,8 fois plus large que haut) l'accompagne.
+ * Mât : sans logo, le nom du journal en grand, en caractères de titre de
+ * journal ; avec un logo (SVG ou image), le logo remplace le nom écrit
+ * (son texte alternatif porte le nom). Jamais les deux.
  */
-function wordmarkInner(masthead: { name: string; logo?: { src: string; width?: number; height?: number } }, ctx: RenderContext): string {
-  if (!masthead.logo) return esc(masthead.name);
-  const { width, height } = masthead.logo;
-  const emblem = Boolean(width && height && width / height < 1.8);
-  const src = safeUrl(asset(masthead.logo.src, ctx));
-  return emblem
-    ? `<span class="wordmark-with-logo"><img class="publication-logo publication-logo--emblem" src="${src}" alt="" width="${width}" height="${height}"><span class="wordmark-name">${esc(masthead.name)}</span></span>`
-    : `<img class="publication-logo" src="${src}" alt="${esc(masthead.name)}">`;
+export function wordmarkInner(masthead: { name: string; logo?: { src: string; alt?: string; width?: number; height?: number } }, ctx: RenderContext): string {
+  const logo = usablePublicationLogo(masthead.logo, undefined, inflateSync);
+  if (!logo) return `<span class="wordmark-name">${esc(masthead.name)}</span>`;
+  const { width, height } = logo;
+  const size = width && height ? ` width="${width}" height="${height}"` : '';
+  const src = safeUrl(asset(logo.src, ctx));
+  return `<img class="publication-logo" src="${src}" alt="${esc(logo.alt || masthead.name)}"${size}>`;
 }
 
 /** « Photo : Nom (CC BY-SA 4.0) », licence liée quand on a son adresse. */
@@ -202,9 +321,14 @@ function radioTuner(ctx: RenderContext): string {
   return radioBarHtml(ctx.publication.radio);
 }
 
-/** Emplacement sous le tuner pour dock météo + sports mobile (rempli en JS). */
+/** Emplacement sous le tuner pour la météo téléphone/tablette (rempli en JS). */
 function weatherDockHtml(): string {
-  return `<div class="masthead-weather-dock" id="masthead-weather-dock" hidden aria-label="Météo et sports"></div>`;
+  return `<div class="masthead-weather-dock" id="masthead-weather-dock" hidden aria-label="Météo"></div>`;
+}
+
+/** Cartes sports sous la radio (et sous le dock météo sur téléphone), hors du mât. */
+function sportsStripHtml(ctx: RenderContext): string {
+  return sportsPayload(ctx);
 }
 
 /**
@@ -261,14 +385,54 @@ function mastheadBackground(ctx: RenderContext, options: MastheadOptions): strin
       ? `<a href="${safeUrl(image.creditUrl)}" rel="noopener">${esc(photoCredit(image))}</a>`
       : esc(photoCredit(image))
     : '';
-  const manifest = settings.images.map((item) => ({
-    src: asset(item.src, ctx), alt: item.alt, credit: item.credit ?? '', license: item.license ?? '', creditUrl: item.creditUrl ?? '',
-    backgroundPosition: `${clampPercent(item.focalPoint?.x)}% ${clampPercent(item.focalPoint?.y)}%`,
-  }));
-  return `<img class="masthead-background" src="${safeUrl(asset(image.src, ctx))}" alt="" data-masthead-background style="object-position:${esc(options.backgroundPosition)}">
+  const manifest = settings.images.map((item) => {
+    const attrs = responsiveAttrs(item, ctx, SIZES_MASTHEAD);
+    return {
+      src: attrs.src, srcset: attrs.srcset, sizes: attrs.sizes, alt: item.alt, credit: item.credit ?? '', license: item.license ?? '', creditUrl: item.creditUrl ?? '',
+      backgroundPosition: `${clampPercent(item.focalPoint?.x)}% ${clampPercent(item.focalPoint?.y)}%`,
+    };
+  });
+  const first = responsiveAttrs(image, ctx, SIZES_MASTHEAD);
+  const payload = { randomOrder: settings.randomOrder !== false, images: manifest };
+  return `<img class="masthead-background" ${srcsetHtml(first)} alt="" data-masthead-background style="object-position:${esc(options.backgroundPosition)}">
   <span class="masthead-background-shade" aria-hidden="true"></span>
   <span class="masthead-photo-credit" data-masthead-credit>${credit}</span>
-  <script type="application/json" id="masthead-backgrounds">${JSON.stringify(manifest).replace(/</g, '\\u003c')}</script>`;
+  <script type="application/json" id="masthead-backgrounds">${JSON.stringify(payload).replace(/</g, '\\u003c')}</script>
+  <script>
+  (function(){
+    var data=document.getElementById('masthead-backgrounds');
+    if(!data) return;
+    var parsed; try{parsed=JSON.parse(data.textContent||'[]');}catch(e){return;}
+    var images=Array.isArray(parsed)?parsed:(parsed&&parsed.images)||[];
+    var random=Array.isArray(parsed)?true:parsed.randomOrder!==false;
+    if(!random||images.length<2) return;
+    var img=document.querySelector('[data-masthead-background]');
+    if(!img) return;
+    var n=images.length, i=0;
+    try{
+      if(window.crypto&&crypto.getRandomValues){
+        var buf=new Uint32Array(1), max=0x100000000, limit=max-(max%n), x;
+        do{crypto.getRandomValues(buf);x=buf[0];}while(x>=limit);
+        i=x%n;
+      }else i=Math.floor(Math.random()*n);
+    }catch(e){i=Math.floor(Math.random()*n);}
+    var item=images[i];
+    if(!item||!item.src) return;
+    if(item.srcset) img.setAttribute('srcset',item.srcset); else img.removeAttribute('srcset');
+    if(item.sizes) img.setAttribute('sizes',item.sizes); else if(item.srcset) img.setAttribute('sizes','100vw');
+    img.src=item.src;
+    if(item.backgroundPosition) img.style.objectPosition=item.backgroundPosition;
+    img.setAttribute('data-masthead-start', String(i));
+    var creditEl=document.querySelector('[data-masthead-credit]');
+    if(creditEl&&item.credit){
+      var label='Photo : '+item.credit+(item.license?' ('+item.license+')':'');
+      creditEl.replaceChildren();
+      if(item.creditUrl&&item.creditUrl.indexOf('https://')===0){
+        var a=document.createElement('a'); a.href=item.creditUrl; a.rel='noopener'; a.textContent=label; creditEl.appendChild(a);
+      } else creditEl.textContent=label;
+    }
+  })();
+  </script>`;
 }
 
 /** Route de la page résultats (puce mât) — `/sports/` par défaut. */
@@ -353,8 +517,9 @@ function sportsPayload(ctx: RenderContext): string {
     href: sportsPagePath(sports, ctx),
     demoAsOf: pruned.demoAsOf ?? sports.demoAsOf,
     demoLive: sports.demoLive,
+    timeZone: ctx.publication.timeZone || 'America/Toronto',
   };
-  return `<div class="masthead-sports" data-sports-payload="${esc(JSON.stringify(payload))}" aria-label="Au tableau — scores et matchs" aria-live="polite"></div>`;
+  return `<div class="masthead-sports-strip masthead-sports" id="masthead-sports-strip" hidden data-sports-payload="${esc(JSON.stringify(payload))}" aria-label="Au tableau — scores et matchs" aria-live="polite"></div>`;
 }
 
 function sportsGlyphHtml(sport: string): string {
@@ -453,18 +618,17 @@ function sportsOppHtml(opponent: string, institution?: string): string {
 }
 
 function sportsSexBadgeHtml(sex?: string): string {
-  if (!sex) return '';
-  const s = sex.toLowerCase();
-  if (s === 'f' || s.startsWith('fémin') || s.startsWith('femin')) {
-    return `<span class="sports-panel__sex sports-panel__sex--f" title="Féminin">F</span>`;
-  }
-  if (s === 'm' || s.startsWith('mascul')) {
-    return `<span class="sports-panel__sex sports-panel__sex--m" title="Masculin">M</span>`;
-  }
-  if (s.includes('mix')) {
-    return `<span class="sports-panel__sex sports-panel__sex--x" title="Mixte">Mixte</span>`;
-  }
-  return `<span class="sports-panel__sex sports-panel__sex--x">${esc(sex)}</span>`;
+  const label = sportsSexLabel(sex);
+  if (!label) return '';
+  const key = label === 'Féminin' ? 'f' : label === 'Masculin' ? 'm' : 'x';
+  const title = key === 'x' ? ' title="Ouvert / mixte"' : '';
+  return ` <span class="sports-panel__sex sports-panel__sex--${key}"${title}>${esc(label)}</span>`;
+}
+
+function sportsOfficialLinkHtml(team: SportsTeam): string {
+  const href = officialSportsUrl(team.officialUrl);
+  if (!href) return '';
+  return `<p class="sports-panel__official"><a class="sports-panel__results-source" href="${esc(href)}" rel="noopener noreferrer" target="_blank">Résultats officiels</a></p>`;
 }
 
 /** Jour de référence éditorial (demoAsOf ou aujourd’hui dans le fuseau). */
@@ -551,11 +715,13 @@ function sportsResultRows(
     const opp = sportsOppHtml(next.opponent, next.opponentInstitution);
     const venue = sportsVenueHtml(next.home);
     const homeAttr = next.home === true ? ' data-home="1"' : next.home === false ? ' data-home="0"' : '';
-    rows.push(`<li class="sports-result sports-result--next"${homeAttr}>
+    const isLive = next.live === true;
+    const nextLabel = isLive ? 'En cours' : 'À venir';
+    rows.push(`<li class="sports-result sports-result--next${isLive ? ' sports-result--live' : ''}"${homeAttr}>
   <time class="sports-result__time" datetime="${esc(next.date)}">${timeInner}</time>
-  <span class="sports-result__score sports-result__score--next" aria-label="Prochain match">À venir</span>
+  <span class="sports-result__score sports-result__score--next" aria-label="${esc(nextLabel)}">${esc(nextLabel)}</span>
   <span class="sports-result__title"><span class="sports-result__vs">vs</span> ${opp}${venue}</span>
-  <span class="sports-result__badge sports-result__badge--next" title="Prochain match">→</span>
+  <span class="sports-result__badge sports-result__badge--next" title="${esc(nextLabel)}">${isLive ? '●' : '→'}</span>
 </li>`);
   }
 
@@ -633,6 +799,7 @@ export function sportsResultsPage(ctx: RenderContext, sportsArticles: Article[] 
     <div class="sports-panel__identity">
       <h2 class="sports-panel__name sports-panel__name--branded"><span class="sports-panel__brand">${esc(team.name)}</span>${codeHtml}${sexBadge}</h2>
       <p class="sports-panel__meta">${esc(team.sportLabel || team.sport)}${team.institution ? ` · ${esc(team.institution)}` : ''}</p>
+      ${sportsOfficialLinkHtml(team)}
     </div>
   </header>
   ${sportsResultRows(team, sportsForRows, tz)}
@@ -688,20 +855,18 @@ function mastheadTools(ctx: RenderContext, current?: string): string {
   const localities = weather?.enabled === false ? [] : (weather?.localities ?? []);
   const assetsBase = asset('/assets/', ctx);
   const homeHref = asset('/', ctx);
-  const sportsHtml = sportsPayload(ctx);
   const button = (href: string, label: string, glyph: string, extraClass = '', currentPage = false) =>
     `<a class="masthead-tool${extraClass ? ` ${extraClass}` : ''}" href="${safeUrl(href)}" aria-label="${esc(label)}" title="${esc(label)}"${currentPage ? ' aria-current="page"' : ''}>${glyph}</a>`;
   return `<div class="masthead-utility">
     <p class="masthead-clock"><span data-masthead-date></span><time data-masthead-time></time></p>
-    ${localities.length || sportsHtml
+    ${localities.length
       ? `<div class="masthead-status" data-masthead-status>
-    ${localities.length ? `<div class="masthead-weather" data-weather-localities="${esc(JSON.stringify(localities))}" data-meteocons-base="${esc(asset('/assets/meteocons/animated/', ctx))}" aria-label="Météo"></div>` : ''}
-    ${sportsHtml}
+    <div class="masthead-weather" data-weather-localities="${esc(JSON.stringify(localities))}" data-meteocons-base="${esc(asset('/assets/meteocons/animated/', ctx))}" aria-label="Météo"></div>
   </div>`
       : ''}
     <div class="masthead-tools">
       ${button(homeHref, 'Accueil', icon('home', assetsBase), 'masthead-home', current === homeHref)}
-      ${button(asset('/feed.xml', ctx), 'Flux RSS', icon('rss', assetsBase), 'masthead-rss')}
+      ${ctx.publication.noindex ? '' : button(asset('/feed.xml', ctx), 'Flux RSS', icon('rss', assetsBase), 'masthead-rss')}
       ${tools?.pomodoro !== false ? button('https://le-radar.ca/pomo/', 'Pomodoro', emojiIcon(assetsBase, 'tomato.png'), 'masthead-pomo') : ''}
       ${tools?.solitaire !== false ? button('https://le-radar.ca/solitaire/', 'Solitaire', emojiIcon(assetsBase, 'playing-cards.png'), 'masthead-solitaire') : ''}
       <button type="button" id="theme-toggle" class="masthead-tool theme-toggle" aria-label="Passer en mode sombre" title="Passer en mode sombre">${icon('sun', assetsBase)}${icon('moon', assetsBase)}</button>
@@ -733,15 +898,15 @@ export function articleCard(article: Article, ctx: RenderContext, variant: boole
     title: article.title,
     excerpt: article.excerpt,
     readMore: true,
-    // Eyebrow manchette ≠ titre du fil (défaut « À la une », pas wireTitle).
-    leadEyebrow: labels?.leadEyebrow || 'À la une',
+    // « À la une » seulement pour un article vraiment mis en avant (featured).
+    leadEyebrow: role === 'lead' && article.featured ? (labels?.leadEyebrow || 'À la une') : undefined,
     date: { iso: date, label: formatDateTime(date, ctx.publication.timeZone) },
     authors: article.authors.map((slug) => ({
       name: ctx.authorsBySlug.get(slug)?.name ?? slug,
       href: safeUrl(relative(authorUrl(ctx.publication, slug), ctx)),
     })),
     image: article.lead ? {
-      src: safeUrl(asset(article.lead.src, ctx)),
+      ...responsiveAttrs(article.lead, ctx, role === 'lead' ? SIZES_LEAD_CARD : SIZES_CARD),
       alt: article.lead.alt,
       caption: article.lead.caption,
       credit: article.lead.credit,
@@ -850,7 +1015,7 @@ export function page(content: string, options: PageOptions, ctx: RenderContext):
   }
 <meta name="twitter:card" content="${options.image ? 'summary_large_image' : 'summary'}">
 
-<link rel="alternate" type="application/atom+xml" title="${esc(pub.name)}" href="${asset('/feed.xml', ctx)}">
+${pub.noindex ? '' : `<link rel="alternate" type="application/atom+xml" title="${esc(pub.name)}" href="${asset('/feed.xml', ctx)}">`}
 <link rel="stylesheet" href="${asset('/assets/tokens.css', ctx)}">
 <link rel="stylesheet" href="${asset('/assets/theme.css', ctx)}">
 <link rel="stylesheet" href="${asset('/assets/source-view.css', ctx)}">
@@ -869,15 +1034,18 @@ ${demoBannerHtml(ctx.demoNotice)}
       <div>
         <p class="wordmark"><a href="${asset('/', ctx)}">${wordmarkInner(masthead, ctx)}</a></p>
         ${masthead.signature ? `<p class="masthead-tagline">${esc(masthead.signature)}</p>` : ''}
+        ${mastheadDemoEditorialHtml(ctx)}
       </div>
       <div class="masthead-meta">
         <span>${esc(masthead.institution)}</span>
+        ${socialNavHtml(pub.social, pub.name, 'masthead-social')}
       </div>
     </div>
   </div>
 </header>
 ${radio}
 ${weatherDockHtml()}
+${sportsStripHtml(ctx)}
 <nav class="nav-wrap" aria-label="Sections">
   <div class="wrap">
     <div class="nav-shell" data-nav-shell>
@@ -895,34 +1063,38 @@ ${content}
   <div class="wrap">
     <div class="site-foot__brand">
       <p class="site-foot__wordmark">${esc(pub.name)}</p>
-      <p class="site-foot__signature">${esc(pub.institution)}${pub.founded ? ` · depuis ${esc(pub.founded)}` : ''}${pub.tagline ? ` — ${esc(pub.tagline)}` : ''}</p>
+      <p class="site-foot__signature"${footSignature(pub) ? '' : ' hidden'}>${esc(footSignature(pub))}</p>
+      ${socialNavHtml(pub.social, pub.name, 'site-foot__social')}
     </div>
-    <nav class="site-foot__nav" aria-label="Sections">
+    <nav class="site-foot__nav" aria-label="Sections, pied de page">
       ${footerNavHtml(nav, { current: options.current, editorial })}
     </nav>
     <nav class="site-foot__links" aria-label="Liens de pied de page">
-      <a href="${asset('/feed.xml', ctx)}">Flux RSS</a>
-      <span class="site-foot__sep" aria-hidden="true">·</span>
+      ${pub.noindex ? '' : `<a href="${asset('/feed.xml', ctx)}">Flux RSS</a><span class="site-foot__sep" aria-hidden="true">·</span>`}
       <a href="${asset('/archives/', ctx)}"${editorial ? ' data-editorial-link' : ''}>Archives</a>
       <span class="site-foot__sep" aria-hidden="true">·</span>
       <a href="${asset('/plan-du-site/', ctx)}"${editorial ? ' data-editorial-link' : ''}>Plan du site</a>
+      <span class="site-foot__sep" aria-hidden="true">·</span>
+      <a href="${asset('/revue/', ctx)}"${editorial ? ' data-editorial-link' : ''}>Revue</a>
+      <span class="site-foot__sep" aria-hidden="true">·</span>
+      <a href="${asset('/recherche/', ctx)}"${editorial ? ' data-editorial-link' : ''}>Recherche</a>
     </nav>
     <div class="site-foot__credit">
       ${
         pub.governance.contact
           ? `<p class="site-foot__contact"><a href="mailto:${esc(pub.governance.contact)}">${esc(pub.governance.contact)}</a>${
-              pub.governance.stewardEntity ? ` · ${esc(pub.governance.stewardEntity)}` : ''
+              footSteward(pub) ? ` · ${esc(footSteward(pub))}` : ''
             }</p>`
-          : pub.governance.stewardEntity
-            ? `<p class="site-foot__contact">${esc(pub.governance.stewardEntity)}</p>`
+          : footSteward(pub)
+            ? `<p class="site-foot__contact">${esc(footSteward(pub))}</p>`
             : ''
       }
-      ${pub.license ? `<p class="site-foot__legal">Contenus sous licence ${esc(pub.license)}, sauf mention contraire.</p>` : ''}
-      <p class="site-foot__built">Site statique produit par <a href="https://github.com/azdak919/le-kiosque" rel="noopener">Le Kiosque</a> — socle libre pour les journaux étudiants. © ${ctx.buildYear}</p>
+      <p class="site-foot__legal">${footCopyright(pub, ctx.buildYear)}</p>
+      <p class="site-foot__built">${footBuiltHtml(ctx.redactionHref ?? asset('/redaction/', ctx), showDemoEditorialEntry(ctx))}</p>
     </div>
   </div>
 </footer>
-<!-- Outils bas de page : haut (gauche) + loupe (droite) — parité LE-RADAR. -->
+<!-- Outils bas de page : flèche « haut de page » juste à gauche de la loupe, en bas à droite. -->
 <div class="page-tools" id="page-tools" data-page-tools>
   <button
     type="button"
@@ -976,8 +1148,13 @@ ${content}
     </button>
   </div>
 </div>
+<script src="${asset('/assets/bg-rotation-lib.js', ctx)}" defer></script>
+<script src="${asset('/assets/sports-board-lib.js', ctx)}" defer></script>
 <script src="${asset('/assets/kiosque.js', ctx)}" defer></script>
-${ctx.editorial ? `<script>window.KIOSQUE_EDITORIAL=${JSON.stringify({ mode: 'demo-local', publicBasePath: ctx.basePath, adminBasePath: `${ctx.basePath}/admin`, assetsBase: ctx.editorial.assetsBase, seedUrl: ctx.editorial.seedUrl, publicationSlug: pub.slug, databaseKey: ctx.editorial.databaseKey }).replace(/</g, '\\u003c')};</script>
+${ctx.editorial ? `<script>window.KIOSQUE_EDITORIAL=${JSON.stringify(ctx.editorial.mode === 'socle-vivant'
+  // Paquet complet : le socle PHP de la même installation remet le sous-dossier dans ces chemins.
+  ? { mode: 'socle-vivant', apiBase: ctx.basePath, publicBasePath: ctx.basePath, adminBasePath: `${ctx.basePath}/redaction`, assetsBase: ctx.editorial.assetsBase }
+  : { mode: 'demo-local', publicBasePath: ctx.basePath, adminBasePath: (ctx.redactionHref ?? `${ctx.basePath}/admin`).replace(/\/+$/, ''), assetsBase: ctx.editorial.assetsBase, seedUrl: ctx.editorial.seedUrl, publicationSlug: pub.slug, databaseKey: ctx.editorial.databaseKey, demoEditorialEntry: showDemoEditorialEntry(ctx) }).replace(/</g, '\\u003c')};</script>
 <script type="module" src="${ctx.editorial.assetsBase}/front.js"></script>` : ''}
 </body>
 </html>
@@ -995,10 +1172,12 @@ ${ctx.editorial ? `<script>window.KIOSQUE_EDITORIAL=${JSON.stringify({ mode: 'de
 export function magazineFeedHtml(
   articles: Article[],
   ctx: RenderContext,
-  opts: { heroLabel: string; empty: string },
+  opts: { heroLabel: string; empty: string; rail?: string },
 ): string {
   if (!articles.length) return `<p class="empty">${esc(opts.empty)}</p>`;
-  const [first, ...rest] = articles;
+  const featured = articles.find((item) => item.featured);
+  const first = featured ?? articles[0];
+  const rest = articles.filter((item) => item.id !== first.id);
   // 3 vedettes + jusqu’à 6 en bref (graine). Le JS peut encore trimmer
   // la dernière carte si En bref dépasse le hero (règle d’équité LE-RADAR).
   const features = rest.slice(0, 3);
@@ -1012,7 +1191,7 @@ export function magazineFeedHtml(
       ${
         briefs.length
           ? `<aside class="brief-rail" aria-label="En bref"><h2>En bref</h2>${briefs.map((a) => articleCard(a, ctx, 'brief')).join('\n')}</aside>`
-          : ''
+          : (opts.rail ?? '')
       }
       ${
         tail.length
@@ -1026,20 +1205,21 @@ export function magazineFeedHtml(
 }
 
 export function homePage(articles: Article[], ctx: RenderContext): string {
-  const wireTitle = ctx.publication.labels?.wireTitle || 'À la une';
+  const wireTitle = ctx.publication.labels?.wireTitle || 'Le fil étudiant';
   return page(
     `<div class="wrap wire">
       <div class="wire-head">
         <h1 class="wire-title">${esc(wireTitle)}</h1>
-        <span class="wire-status">${articles.length} article${articles.length > 1 ? 's' : ''}</span>
+        ${articles.length ? `<span class="wire-status">${articles.length} article${articles.length > 1 ? 's' : ''}</span>` : ''}
       </div>
       ${magazineFeedHtml(articles, ctx, {
         heroLabel: wireTitle,
         empty: 'Aucun article publié pour le moment.',
+        rail: homeRailHtml({ publication: ctx.publication, sections: ctx.taxonomies.sections, articles, base: ctx.basePath, linkAttributes: '' }),
       })}
     </div>`,
     {
-      title: `${ctx.publication.name} — ${ctx.publication.tagline ?? ctx.publication.institution}`,
+      title: [ctx.publication.name, ctx.publication.tagline || ctx.publication.institution].filter(Boolean).join(' — '),
       canonical: `${ctx.publication.siteUrl}/`,
       current: asset('/', ctx),
     },
@@ -1138,6 +1318,7 @@ export function articlePage(article: Article, ctx: RenderContext, relatedArticle
             : ''
         }
       </div>
+      ${shareButtons(article.title, article.canonicalUrl || `${String(ctx.publication.siteUrl || '').replace(/\/+$/, '')}/articles/${article.slug}/`)}
       <div class="post-flow">
       ${
         lead
@@ -1146,7 +1327,7 @@ export function articlePage(article: Article, ctx: RenderContext, relatedArticle
               /* Pas d’aspect-ratio forcé en HTML : l’impression doit pouvoir
                  compresser la lead sans min-height / ratio écran. */
               return `<figure class="post-lead">
-        <img class="post-lead__img" src="${safeUrl(asset(lead.src, ctx))}" alt="${esc(lead.alt || '')}" decoding="async" fetchpriority="high"${lead.width ? ` width="${lead.width}"` : ''}${lead.height ? ` height="${lead.height}"` : ''} style="${pos}">
+        <img class="post-lead__img" ${srcsetHtml(responsiveAttrs(lead, ctx, SIZES_POST))} alt="${esc(lead.alt || '')}" decoding="async" fetchpriority="high"${lead.width ? ` width="${lead.width}"` : ''}${lead.height ? ` height="${lead.height}"` : ''} style="${pos}">
         ${caption ? `<figcaption class="post-lead__credit">${caption}</figcaption>` : ''}
       </figure>`;
             })()
@@ -1202,7 +1383,7 @@ export function sectionPage(section: Section, articles: Article[], ctx: RenderCo
     `<div class="wrap wire">
       <div class="wire-head">
         <h1 class="wire-title">${esc(section.name)}</h1>
-        <span class="wire-status">${articles.length} article${articles.length > 1 ? 's' : ''}</span>
+        ${articles.length ? `<span class="wire-status">${articles.length} article${articles.length > 1 ? 's' : ''}</span>` : ''}
       </div>
       ${section.description ? `<p class="section-intro">${esc(section.description)}</p>` : ''}
       ${magazineFeedHtml(articles, ctx, {
@@ -1226,7 +1407,7 @@ export function categoryPage(category: { slug: string; name: string; description
     `<div class="wrap wire">
       <div class="wire-head">
         <h1 class="wire-title">${esc(category.name)}</h1>
-        <span class="wire-status">${articles.length} article${articles.length > 1 ? 's' : ''}</span>
+        ${articles.length ? `<span class="wire-status">${articles.length} article${articles.length > 1 ? 's' : ''}</span>` : ''}
       </div>
       ${category.description ? `<p class="section-intro">${esc(category.description)}</p>` : ''}
       ${magazineFeedHtml(articles, ctx, {
@@ -1403,6 +1584,66 @@ function archiveYearOf(article: Article, timeZone: string): number {
 }
 
 /** Groupement année → articles (années desc., articles déjà triés). */
+
+/** Boutons de partage sans pistage : copies, courriel, et liens d'intention. */
+export function shareButtons(title: string, url: string): string {
+  const encodedUrl = encodeURIComponent(url);
+  const encodedTitle = encodeURIComponent(title);
+  return `<aside class="share" aria-label="Partager">
+    <p class="share__label">Partager</p>
+    <div class="share__actions">
+      <button type="button" class="share__btn" data-share="copy" data-share-url="${esc(url)}">Copier le lien</button>
+      <a class="share__btn" href="mailto:?subject=${encodedTitle}&body=${encodedUrl}">Courriel</a>
+      <a class="share__btn" href="https://bsky.app/intent/compose?text=${encodedTitle}%20${encodedUrl}" target="_blank" rel="noopener noreferrer">Bluesky</a>
+      <button type="button" class="share__btn" data-share="mastodon" data-share-url="${esc(url)}" data-share-title="${esc(title)}">Mastodon</button>
+      <a class="share__btn" href="https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}" target="_blank" rel="noopener noreferrer">Facebook</a>
+      <a class="share__btn" href="https://x.com/intent/post?text=${encodedTitle}&url=${encodedUrl}" target="_blank" rel="noopener noreferrer">X</a>
+    </div>
+  </aside>`;
+}
+
+export function searchPage(articles: Article[], ctx: RenderContext): string {
+  const index = articles.map((article) => ({
+    title: article.title,
+    excerpt: article.excerpt || '',
+    href: asset(`/articles/${article.slug}/`, ctx),
+    authors: article.authors.map((slug) => ctx.authorsBySlug.get(slug)?.name ?? slug).join(', '),
+  }));
+  return page(
+    `<div class="wrap wire">
+      <div class="wire-head"><h1 class="wire-title">Recherche</h1></div>
+      <form class="search-form" method="get" action="${asset('/recherche/', ctx)}" role="search">
+        <label>Chercher dans le journal<input type="search" name="q" value="" placeholder="Un titre, un nom, un mot" id="recherche-q"></label>
+        <button type="submit" class="primary">Rechercher</button>
+      </form>
+      <div id="recherche-results"><p class="empty">Écrivez un mot, un titre ou un nom, puis lancez la recherche.</p></div>
+      <script type="application/json" id="recherche-index">${JSON.stringify(index).replace(/</g, '\\u003c')}</script>
+    </div>`,
+    { title: `Recherche — ${ctx.publication.name}`, canonical: `${ctx.publication.siteUrl.replace(/\/+$/, '')}/recherche/` },
+    ctx,
+  );
+}
+
+export function revuePage(articles: Article[], ctx: RenderContext): string {
+  const picks = articles.slice(0, 12);
+  const pieces = picks.map((article) => {
+    const names = article.authors.map((slug) => ctx.authorsBySlug.get(slug)?.name ?? slug).join(', ');
+    const date = article.publishedAt || article.updatedAt;
+    const body = article.body?.raw ? `<div class="post-body">${article.body.format === 'html' ? article.body.raw : ''}</div>` : (article.excerpt ? `<p>${esc(article.excerpt)}</p>` : '');
+    return `<article class="revue-piece"><h2>${esc(article.title)}</h2><p class="post-meta">${esc(names)} · <time datetime="${esc(date)}">${esc(date)}</time></p>${body}<p class="revue-piece__link"><a href="${asset(`/articles/${article.slug}/`, ctx)}">Lire sur le site</a></p></article>`;
+  }).join('');
+  return page(
+    `<div class="wrap wire wire--revue">
+      <div class="wire-head"><h1 class="wire-title">Revue</h1>${picks.length ? `<span class="wire-status">${picks.length} article${picks.length > 1 ? 's' : ''}</span>` : ''}</div>
+      <p class="section-intro">Une édition à imprimer : les articles récents, à la suite, sans le mât ni la radio. Utilisez « Imprimer » dans votre navigateur, ou le bouton ci-dessous.</p>
+      <p class="revue-actions noprint"><button type="button" class="primary" data-revue-print>Imprimer la revue</button></p>
+      ${picks.length ? pieces : '<p class="empty">Aucun article à mettre dans la revue pour le moment.</p>'}
+    </div>`,
+    { title: `Revue — ${ctx.publication.name}`, canonical: `${ctx.publication.siteUrl.replace(/\/+$/, '')}/revue/` },
+    ctx,
+  );
+}
+
 export function groupArticlesByYear(articles: Article[], timeZone: string): Array<{ year: number; articles: Article[] }> {
   const buckets = new Map<number, Article[]>();
   for (const article of articles) {
@@ -1516,7 +1757,8 @@ export function archivesPage(articles: Article[], ctx: RenderContext): string {
     (pub.institution ? `, journal étudiant de ${pub.institution}` : '') +
     `. ${articles.length} article${articles.length > 1 ? 's' : ''} classé${articles.length > 1 ? 's' : ''} par année — textes, photos et liens permanents hébergés ici.`;
 
-  const yearNav = groups.length
+  // Une seule année : pas de barre des années (elle répétait « 2026 » au-dessus du titre « 2026 »).
+  const yearNav = groups.length > 1
     ? `<nav class="archive-year-nav" aria-label="Années d’archives">
       ${groups
         .map(

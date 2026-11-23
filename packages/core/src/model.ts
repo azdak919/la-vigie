@@ -121,6 +121,8 @@ export interface MediaAsset {
   mime?: string;
   /** sha256 du fichier — vérification d'intégrité de l'archive. */
   checksum?: string;
+  /** Miniatures servies par le Socle (côté long 480, 960, 1600), pour le srcset. */
+  variants?: Array<{ src: string; width: number; height: number }>;
   source: SourceAttribution;
 }
 
@@ -286,6 +288,8 @@ export interface SportsTeam {
   sport: string;
   sportLabel?: string;
   sex?: string;
+  /** Lien http(s) vers le calendrier ou les résultats officiels de l’équipe. */
+  officialUrl?: string;
   colors?: { primary?: string; secondary?: string };
   /** true = hors RSEQ, données de démonstration uniquement. */
   fictional?: boolean;
@@ -306,6 +310,8 @@ export interface SportsNextGame {
   home?: boolean;
   competition?: string;
   teamId?: string;
+  /** Saisi à la main : le match est en train de se jouer. */
+  live?: boolean;
 }
 
 /**
@@ -369,6 +375,11 @@ export interface Publication {
   masthead?: {
     backgrounds?: {
       enabled?: boolean;
+      /**
+       * Si vrai (défaut) : une photo au hasard à chaque visite.
+       * Si faux : toujours commencer par la première de `images`.
+       */
+      randomOrder?: boolean;
       images: MediaAsset[];
     };
     weather?: {
@@ -406,17 +417,8 @@ export interface Publication {
     position?: 'top' | 'bottom';
   };
   /**
-   * Politique média du journal (photos d’articles).
-   * `autoStockPhoto` : si aucune photo principale n’est fournie à
-   * l’enregistrement, l’algo stock LE-RADAR (banque locale / Openverse /
-   * Commons selon le contenu) en propose une.
-   */
-  media?: {
-    autoStockPhoto?: boolean;
-  };
-  /**
    * Libellés d’interface paramétrables (focus group / rédaction).
-   * Fallbacks thème : « À la une ».
+   * Fallbacks thème : « Le fil étudiant » (titre du fil), « À la une » (manchette).
    */
   labels?: {
     /** Titre du fil d’accueil (h1). */
@@ -425,6 +427,11 @@ export interface Publication {
     leadEyebrow?: string;
   };
   founded?: string;
+  /**
+   * Réseaux sociaux du journal (adresses complètes ; courriel pour `email`).
+   * Affichés en icônes au mât et au pied de page ; un réseau vide n’apparaît pas.
+   */
+  social?: Partial<Record<'facebook' | 'instagram' | 'x' | 'bluesky' | 'mastodon' | 'tiktok' | 'youtube' | 'linkedin' | 'threads' | 'email', string>>;
   governance: Governance;
   license?: string;
 }
@@ -462,6 +469,8 @@ export interface Article {
   isDemo?: boolean;
   /** Vrai dès qu'une personne modifie un exemple dans le mode local. */
   isUserModified?: boolean;
+  /** Article mis en avant (« À la une »). Sans cela, pas d'étiquette. */
+  featured?: boolean;
   publishedAt?: ISODate;
   updatedAt: ISODate;
 

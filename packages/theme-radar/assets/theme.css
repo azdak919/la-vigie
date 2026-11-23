@@ -87,7 +87,9 @@ a { color: inherit; }
   flex-wrap: wrap;
 }
 .wordmark {
-  font-family: var(--serif);
+  /* Nom du journal en caractères de titre de journal, quelle que soit la typographie
+     du site : Times New Roman, ou ses équivalents libres (Liberation Serif, Tinos : OFL). */
+  font-family: var(--masthead-serif, "Times New Roman", Times, "Liberation Serif", Tinos, "Nimbus Roman", serif);
   font-weight: 700;
   font-size: var(--wordmark-size);
   line-height: 1;
@@ -97,14 +99,74 @@ a { color: inherit; }
   text-decoration: none;
 }
 .wordmark a { text-decoration: none; color: inherit; }
-.publication-logo { display: block; max-width: min(320px, 70vw); max-height: 82px; width: auto; height: auto; }
-.wordmark-with-logo { display: inline-flex; align-items: center; gap: 0.45em; }
-.publication-logo--emblem { height: 1.6em; max-height: 82px; width: auto; flex: none; }
+.publication-logo { display: block; max-width: min(420px, 78vw); height: clamp(56px, 7vw + 24px, 96px); width: auto; object-fit: contain; object-position: left center; }
+.masthead[data-text-alignment="center"] .publication-logo { margin-inline: auto; object-position: center; }
+.masthead[data-text-alignment="right"] .publication-logo { margin-left: auto; object-position: right center; }
 .masthead-tagline {
   font-size: 0.82rem;
   color: var(--muted);
   margin: 8px 0 0;
   letter-spacing: 0.01em;
+}
+/* Pastille d’accès à l’espace de rédaction : seulement si le drapeau de démo
+   est activé. Distincte des outils ronds du mât (fond d’accent, icône crayon,
+   libellé explicite). */
+.masthead-demo-editorial {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  margin-top: 0.7em;
+  max-width: 100%;
+  width: fit-content;
+  padding: 0.42em 0.9em 0.42em 0.72em;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 650;
+  font-size: 0.82rem;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  position: relative;
+  z-index: 2;
+  box-sizing: border-box;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
+}
+.masthead-demo-editorial:hover,
+.masthead-demo-editorial:focus-visible {
+  background: var(--accent-dark, var(--accent));
+  color: #fff;
+  text-decoration: none;
+}
+.masthead-demo-editorial:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+:root[data-theme="dark"] .masthead-demo-editorial {
+  background: color-mix(in srgb, var(--accent) 72%, #000);
+  color: #fff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .masthead-demo-editorial {
+    background: color-mix(in srgb, var(--accent) 72%, #000);
+    color: #fff;
+  }
+}
+.masthead-demo-editorial__icon {
+  flex: none;
+  width: 1.1em;
+  height: 1.1em;
+}
+.masthead-demo-editorial__short { display: none; }
+@media (max-width: 720px) {
+  .masthead-demo-editorial {
+    font-size: 0.78rem;
+    margin-top: 0.55em;
+    min-height: 44px;
+    padding-inline: 0.85em 0.95em;
+  }
+  .masthead-demo-editorial__full { display: none; }
+  .masthead-demo-editorial__short { display: inline; }
 }
 .masthead-meta {
   display: flex;
@@ -235,8 +297,9 @@ a { color: inherit; }
   }
   .nav-shell.has-overflow .nav-toggle {
     display: inline-flex;
-    margin-top: 6px;
-    margin-bottom: 4px;
+    margin-top: 4px;
+    margin-bottom: 2px;
+    padding: 6px 12px;
   }
   .nav-shell.is-expanded .nav {
     max-height: none;
@@ -262,8 +325,10 @@ a { color: inherit; }
 :root {
   --demo-banner-sticky-h: 0px;
 }
-body:has(.demo-banner) {
-  /* 1 ligne : 7+7 padding + ~14 px de ligne ≈ 28–32 px. */
+html:has(.demo-banner) {
+  /* 1 ligne : 7+7 padding + ~14 px de ligne ≈ 28–32 px.
+   * Posé sur :root (pas sur body) pour que la mesure JS
+   * (documentElement.style) ne soit pas écrasée par un jeton body. */
   --demo-banner-sticky-h: 2rem;
 }
 
@@ -294,12 +359,15 @@ body:has(.demo-banner) {
 .demo-banner__rest {
   display: inline;
 }
+/* Dans une boîte flex, les espaces autour du tiret disparaissent : « FICTIF—ESSAI ».
+   La marge les remet. */
+.demo-banner__sep { margin-inline: 0.45em; }
 /* Mobile : 2 lignes contrôlées
  *   DÉMONSTRATION DU KIOSQUE —
  *   JOURNAL ÉTUDIANT FICTIF
  * (évite « FICTIF » seul sur la 2ᵉ ligne par wrap naturel). */
 @media (max-width: 720px) {
-  body:has(.demo-banner) {
+  html:has(.demo-banner) {
     /* Fallback 2 lignes tant que le JS n’a pas mesuré. */
     --demo-banner-sticky-h: 2.85rem;
   }
@@ -314,7 +382,7 @@ body:has(.demo-banner) {
     display: none;
   }
   .demo-banner__lead::after {
-    content: ' —';
+    content: '\00a0—';
   }
   .demo-banner__lead,
   .demo-banner__rest {
@@ -330,12 +398,90 @@ body:has(.demo-banner) {
  * place : la colonne du journal, sous le mât. L'emplacement reste replié tant
  * que le module n'a pas dit « ready » (LE-RADAR muet : rien du tout). */
 .radar-radio-slot { display: none; }
+/* Place réservée pendant le chargement du module (sans attribut) : une barre
+ * sombre de la hauteur de celle de LE-RADAR (68 px à l'ordinateur, 58 px au
+ * téléphone), pour que la page ne saute pas quand elle arrive. « off » : replié. */
+.radar-radio-slot:not([data-radar-radio]),
 .radar-radio-slot[data-radar-radio="ready"] {
   display: block;
   max-width: var(--maxw, 1200px);
   margin: 10px auto 0;
   padding: 0 var(--pad, 16px);
   box-sizing: border-box;
+}
+/*
+ * Barre radio collante (parité LE-RADAR .tuner) : quand la radio est
+ * activée, l'emplacement reste en haut du viewport au défilement.
+ * top = hauteur du bandeau démo (0 sans bandeau) ; encoche : on s'ancre
+ * sous safe-area seulement s'il n'y a pas de bandeau (sinon double compte).
+ * z-index 100, sous le bandeau démo (110), au-dessus du fil.
+ * Fond de page sur l'emplacement : le contenu ne transparaît pas dans le
+ * padding autour de la barre arrondie. Rien ne saute : sticky n'ôte
+ * aucune place du flux. Radio éteinte : ces règles ne s'appliquent pas
+ * (l'emplacement reste display:none).
+ */
+body.with-radio .radar-radio-slot:not([data-radar-radio]),
+body.with-radio .radar-radio-slot[data-radar-radio="ready"] {
+  position: sticky;
+  top: var(--demo-banner-sticky-h, 0px);
+  z-index: 100;
+  background: var(--bg);
+  /* La barre reste dans la colonne (mêmes max-width et padding que
+   * le dock météo et les cartes sports). Seul le fond opaque (::after)
+   * traverse le viewport, pour que le fil ne transparaîsse pas à côté
+   * de la barre une fois collée. */
+  isolation: isolate;
+}
+body.with-radio .radar-radio-slot:not([data-radar-radio])::after,
+body.with-radio .radar-radio-slot[data-radar-radio="ready"]::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(50% - 50vw);
+  width: 100vw;
+  background: var(--bg);
+  z-index: -1;
+}
+body.with-radio:not(:has(.demo-banner)) .radar-radio-slot:not([data-radar-radio]),
+body.with-radio:not(:has(.demo-banner)) .radar-radio-slot[data-radar-radio="ready"] {
+  top: env(safe-area-inset-top, 0px);
+}
+/* Ancres : s'arrêter sous la barre collante, pas sous elle. */
+body.with-radio #contenu,
+body.with-radio .nav-wrap,
+body.with-radio .sports-panel,
+body.with-radio [id] {
+  scroll-margin-top: calc(var(--demo-banner-sticky-h, 0px) + var(--radio-sticky-h, 5.5rem) + 8px);
+}
+.radar-radio-slot:not([data-radar-radio])::before {
+  content: "";
+  display: block;
+  height: 68px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, rgba(22, 24, 30, 0.94), rgba(38, 41, 50, 0.9), rgba(22, 24, 30, 0.94));
+  background-size: 200% 100%;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.16);
+  animation: radar-radio-attente 1.6s ease-in-out infinite;
+}
+.radar-radio-slot:not([data-radar-radio]) > .radar-radio { display: none; }
+@media (max-width: 720px) {
+  .radar-radio-slot:not([data-radar-radio])::before { height: 58px; }
+  /* Même air qu’entre la puce météo et la carte sport (padding-top 4 px du bandeau). */
+  .radar-radio-slot:not([data-radar-radio]),
+  .radar-radio-slot[data-radar-radio="ready"] {
+    margin-top: 4px;
+  }
+}
+@keyframes radar-radio-attente {
+  0%, 100% { background-position: 0% 0; }
+  50% { background-position: 100% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .radar-radio-slot:not([data-radar-radio])::before { animation: none; }
+}
+@media print {
+  .radar-radio-slot::before { display: none !important; }
 }
 /* Petit air entre la barre radio et la rangée de rubriques. */
 body.with-radio .nav-wrap {
@@ -568,6 +714,10 @@ body.with-radio .nav {
   padding-bottom: 6px;
   border-bottom: 2px solid var(--rule-strong);
 }
+@media (max-width: 720px) {
+  .wire-head { margin-top: 0; }
+  .wire-title { font-size: 1.25rem; /* 20 px, parité LE-RADAR */ }
+}
 .wire-title {
   font-family: var(--serif);
   font-weight: 700;
@@ -634,8 +784,10 @@ body.with-radio .nav {
   line-height: 1.12;
   letter-spacing: -0.02em;
   margin: 4px 0 2px;
-  overflow-wrap: anywhere;
-  hyphens: auto;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: none;
+  -webkit-hyphens: none;
 }
 .post-subtitle {
   font-family: var(--serif);
@@ -723,6 +875,8 @@ body.with-radio .nav {
 .post-body pre,
 .post-body table {
   text-align: start;
+  hyphens: none;
+  -webkit-hyphens: none;
 }
 .post-body > * + * { margin-top: 1.15em; }
 .post-body h2 {
@@ -1030,7 +1184,8 @@ body.with-radio .nav {
 .site-foot,
 .footer {
   margin-top: 20px;
-  padding: 22px 0 40px;
+  /* Assez de place sous la dernière ligne pour les deux boutons flottants. */
+  padding: 22px 0 88px;
   border-top: 1px solid var(--rule);
   font-size: 0.84rem;
   color: var(--muted);
@@ -1137,6 +1292,29 @@ body.with-radio .nav {
 }
 .site-foot__built a {
   font-weight: 600;
+}
+.site-foot__built .site-foot__sep {
+  margin: 0 0.4em;
+}
+.site-foot__redaction {
+  font-weight: 500;
+  color: inherit;
+  white-space: nowrap;
+}
+.site-foot__redaction:hover,
+.site-foot__redaction:focus-visible {
+  color: var(--accent);
+}
+.site-foot__redaction-short { display: none; }
+.site-foot__powered { display: inline; }
+@media (max-width: 720px) {
+  .site-foot__redaction-full { display: none; }
+  .site-foot__redaction-short { display: inline; }
+}
+/* À la tablette, le libellé long passe sous « Propulsé par », sans point médian orphelin. */
+@media (max-width: 900px) {
+  .site-foot__built { display: flex; flex-direction: column; align-items: flex-start; gap: 0.35em; }
+  .site-foot__built .site-foot__sep { display: none; }
 }
 
 /* ─────────────── ARCHIVES (catalogue chronologique / SEO) ─────────────── */
@@ -1430,6 +1608,21 @@ body.with-radio .masthead--illustrated {
     0 2px 8px rgba(0, 0, 0, 0.32),
     0 0 12px rgba(0, 0, 0, 0.2);
 }
+/* La pastille d’accent reste lisible sur une photo chargée, sans se fondre
+   dans les outils translucides du mât. */
+.masthead--illustrated .masthead-demo-editorial {
+  background: var(--accent);
+  color: #fff;
+  text-shadow: none;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.28), 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+/* Un peu plus de hauteur pour loger la pastille sans rogner ni chevaucher. */
+.masthead--illustrated:has(.masthead-demo-editorial) {
+  --masthead-ar: 3.15;
+  height: clamp(196px, calc(100vw / var(--masthead-ar)), 258px);
+  min-height: 196px;
+  max-height: 258px;
+}
 .masthead--illustrated .masthead-meta,
 .masthead--illustrated .masthead-clock {
   font-weight: 600;
@@ -1616,6 +1809,35 @@ a.masthead-weather__city:focus-visible {
   flex: 0 0 auto;
   filter: brightness(1.12) saturate(1.05);
 }
+/* Prévisions (max/min, demain) : cachées par défaut, révélées dans le dock
+   et, au bureau, dans la rangée du mât (voir la fin du fichier). */
+.weather-chip__today,
+.weather-chip__tomorrow { display: none; }
+/* Dock sous la radio (tous les formats) : max/min du jour et demain visibles. */
+.masthead-weather-dock .weather-chip__today,
+.masthead-weather-dock .weather-chip__tomorrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+}
+.masthead-weather-dock .weather-chip,
+.masthead-status--docked .weather-chip {
+  height: auto !important;
+  max-height: none !important;
+  min-height: var(--mat-h, 32px);
+}
+/* Puce d'attente (requête météo en cours) : même gabarit, icône en rond. */
+.weather-icon-attente {
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.24);
+  filter: none;
+}
+.weather-chip--attente { pointer-events: none; }
+.weather-chip--attente .weather-chip__temp { opacity: 0.6; }
 /* Texte toujours clair sur ardoise — nom de ville entier (pas d’ellipsis).
  * flex-shrink: 0 : le nom ne se compresse pas sous la température
  * (sinon overflow:visible peignait « Ha!15° » sans espace visible). */
@@ -1716,7 +1938,7 @@ a.masthead-weather__city:focus-visible {
   display: inline-block;
   max-width: 100%;
   overflow: hidden;
-  text-overflow: clip;
+  text-overflow: ellipsis;
   white-space: nowrap;
   vertical-align: middle;
   font-size: 11px;
@@ -2063,8 +2285,8 @@ a.masthead-sports__chip:focus-visible {
   font-family: var(--sans);
   font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  text-transform: none;
   line-height: 1.2;
   border-radius: 999px;
   padding: 2px 7px;
@@ -2084,6 +2306,28 @@ a.masthead-sports__chip:focus-visible {
   color: var(--muted);
   background: color-mix(in srgb, var(--rule) 35%, transparent);
   border: 1px solid var(--rule);
+}
+.sports-result--live .sports-result__score--next {
+  color: #b91c1c;
+  font-weight: 800;
+}
+:root[data-theme="dark"] .sports-result--live .sports-result__score--next {
+  color: #fecaca;
+}
+.sports-panel__official {
+  margin: 0.4rem 0 0;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 650;
+}
+.sports-panel__results-source {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.sports-panel__results-source:hover,
+.sports-panel__results-source:focus-visible {
+  color: var(--accent, #6c2163);
 }
 .sports-panel__meta {
   margin: 0;
@@ -2566,6 +2810,8 @@ a.masthead-sports__chip:focus-visible {
 .masthead--image-error .masthead-background,
 .masthead--image-error .masthead-background-shade,
 .masthead--image-error .masthead-photo-credit { display: none; }
+/* Image sans crédit : pas de pastille vide dans le coin du mât. */
+.masthead-photo-credit:empty { display: none; }
 .masthead--image-error { color: var(--ink); min-height: 0; }
 
 /* Enchaînement mât → nav sans bande parasite */
@@ -2575,13 +2821,14 @@ a.masthead-sports__chip:focus-visible {
 /* La grille magazine est portée par source-view.css avec les cartes. */
 
 @media (max-width: 720px) {
-  .masthead { min-height: 0; padding: 10px 0 12px; }
+  body.with-radio .nav-wrap { padding-top: 0; }
+  .masthead { min-height: 0; padding: 0; }
   .masthead--illustrated {
     --masthead-ar: 2.85;
     height: clamp(148px, calc(100vw / var(--masthead-ar)), 196px);
-    min-height: 148px;
-    max-height: 196px;
-    padding: 10px 0 12px;
+    min-height: 0;
+    max-height: none;
+    padding: 0;
   }
   .masthead-utility { grid-template-columns: 1fr auto; padding-bottom: 8px; }
   .masthead--illustrated .masthead-utility { padding-bottom: 4px; }
@@ -2655,6 +2902,7 @@ a.masthead-sports__chip:focus-visible {
   .masthead-clock,
   .masthead-weather,
   .masthead-sports,
+  .masthead-sports-strip,
   .masthead-status,
   .masthead-weather-dock,
   .masthead-background,
@@ -2911,19 +3159,16 @@ a.masthead-sports__chip:focus-visible {
   }
 }
 
-/* ── Outils bas de page — parité LE-RADAR ──
- * Flèche haut : gauche, hors colonne de contenu.
- * Loupe : droite, hors colonne (symétrique).
- * Mobile : repli safe-area + 14 px (pas de gutter).
+/* ── Outils bas de page ──
+ * Flèche « haut de page » juste à gauche de la loupe, même taille (48 px)
+ * et même écart (12 px), en bas à droite. Quand la flèche est masquée,
+ * la loupe reste à cette place (flex-end + display:none sur la flèche).
+ * Mobile : repli safe-area + 14 px.
  */
 .page-tools {
   --tools-fab: 48px;
   --tools-outset: 12px;
   --tools-gutter: max(0px, calc((100vw - min(var(--maxw), 100vw)) / 2));
-  --tools-side-left: max(
-    max(14px, env(safe-area-inset-left, 0px)),
-    calc(var(--tools-gutter) - var(--tools-fab) - var(--tools-outset))
-  );
   --tools-side-right: max(
     max(14px, env(safe-area-inset-right, 0px)),
     calc(var(--tools-gutter) - var(--tools-fab) - var(--tools-outset))
@@ -2934,19 +3179,18 @@ a.masthead-sports__chip:focus-visible {
   bottom: calc(max(16px, env(safe-area-inset-bottom, 0px)) + var(--vk-inset, 0px));
   z-index: 180;
   display: flex;
-  /* DOM = [flèche, loupe] — loupe toujours à droite (même sans flèche). */
+  /* DOM = [flèche, loupe] — les deux en bas à droite, flèche à gauche de la loupe. */
   flex-direction: row;
-  justify-content: flex-start;
+  justify-content: flex-end;
   align-items: flex-end;
   gap: 12px;
-  padding-left: var(--tools-side-left);
+  padding-left: 14px;
   padding-right: var(--tools-side-right);
   pointer-events: none;
 }
 .page-tools > * { pointer-events: auto; }
-/* Parité LE-RADAR : la loupe ne bascule pas à gauche quand #page-scroll-top est hidden. */
 .page-tools > .news-search {
-  margin-left: auto;
+  margin-left: 0;
 }
 
 .page-tools__fab,
@@ -3185,47 +3429,304 @@ html {
 }
 
 /* ---------------------------------------------------------------------------
- * Mobile façon LE-RADAR (t352u) — ordre : date, titre, outils, radio, météo
- * (grille 2 colonnes), sports pleine largeur sur 2 lignes. Valeurs relevées
- * sur le-radar.ca à 390 px (date r5 h29, outils 35 px, météo r5 h29,
- * carte sports r6 ≈ 54 px, marges latérales 18 px, écarts 4 px).
+ * Mobile façon LE-RADAR — ordre : date, nom, sous-titre, outils, puis crédit
+ * photo dans le coin sous les boutons. Rythme vertical : --mat-gap (8 px).
+ * Boutons espacés également (space-between, écart 4 px, pas de groupes).
+ * Sports : hors du mât, sous la radio / le dock météo.
  * ------------------------------------------------------------------------- */
 @media (max-width: 720px) {
   html { --mat-h: 29px; --mat-rayon: 5px; --mat-texte: 11px; --mat-pad: 0 10px; }
-  :has(> .masthead-utility) { display: flex; flex-direction: column; }
+  .masthead { --mat-gap: 8px; }
+  .masthead--illustrated > .wrap,
+  :has(> .masthead-utility) {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: var(--mat-gap);
+    padding-top: var(--mat-gap);
+    padding-bottom: var(--mat-gap);
+  }
   .masthead .masthead-utility { display: contents; }
-  .masthead .masthead-clock { order: 1; align-self: flex-start; font-weight: 650; }
+  .masthead .masthead-clock { order: 1; align-self: flex-start; font-weight: 650; margin: 0; }
   :has(> .masthead-utility) > .masthead-top { order: 2; }
   :has(> .masthead-utility) > :not(.masthead-utility):not(.masthead-top) { order: 4; }
   .masthead .masthead-tools {
-    order: 3; width: 100%; display: flex; justify-content: space-between; gap: 4px;
-    margin: 6px 0 8px;
+    order: 3;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 4px;
+    margin: 0;
   }
-  .masthead .masthead-tools .masthead-tool { width: 35px; height: 35px; min-width: 35px; border-radius: 999px; }
-  .masthead { height: auto !important; max-height: none !important; min-height: 0 !important; }
-  :has(> .masthead-utility) { padding-top: 10px; padding-bottom: 24px; }
-  .masthead .masthead-top { margin: 6px 0 0; }
-  .masthead .masthead-tagline { display: none; }
-  .masthead-weather-dock { padding: 4px 18px 2px; }
+  .masthead .masthead-tools > .masthead-tool {
+    flex: 0 0 auto;
+    box-sizing: border-box;
+    width: 35px;
+    height: 35px;
+    min-width: 35px;
+    margin: 0;
+    border-radius: 999px;
+  }
+  .masthead,
+  .masthead--illustrated {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    justify-content: flex-start;
+  }
+  .masthead .masthead-top {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--mat-gap);
+  }
+  .masthead[data-text-alignment="center"] .masthead-top { align-items: center; }
+  .masthead[data-text-alignment="right"] .masthead-top { align-items: flex-end; }
+  .masthead .masthead-top > div:first-child {
+    display: flex;
+    flex-direction: column;
+    gap: var(--mat-gap);
+  }
+  .masthead .wordmark,
+  .masthead .masthead-tagline,
+  .masthead .masthead-meta { margin: 0; }
+  .masthead .masthead-tagline,
+  .masthead .masthead-meta {
+    display: block;
+    line-height: 1.25;
+    font-size: 12px;
+  }
+  /* Pas de double rembourrage : le mât mobile n’a plus de padding extérieur.
+     Crédit dans le coin, clairement sous les boutons (parité LE-RADAR, 34 px). */
+  .masthead,
+  .masthead--illustrated { padding: 0; }
+  .masthead:has(.masthead-photo-credit:not(:empty)) > .wrap,
+  .masthead--illustrated:has(.masthead-photo-credit:not(:empty)) > .wrap {
+    padding-bottom: 34px;
+  }
+  .masthead:has(.masthead-photo-credit:not(:empty)) .masthead-photo-credit {
+    bottom: var(--mat-gap);
+  }
+  .masthead-weather-dock:not(:empty) { padding: 4px 18px 0; }
+  /* Après retrait de la puce (échec météo), ne pas laisser le seul rembourrage. */
+  .masthead-weather-dock:not(:has(.weather-chip)) { display: none; }
   .masthead-weather-dock .masthead-status {
     display: flex !important; flex-direction: column; align-items: stretch; gap: 4px; width: 100%; overflow: visible;
   }
-  .masthead-weather-dock .masthead-weather { display: grid !important; grid-template-columns: 1fr 1fr; gap: 4px; width: 100%; }
-  .masthead-weather-dock .weather-chip,
-  .masthead-weather-dock .masthead-status .sports-chip { background: rgba(42, 46, 54, .92) !important; color: #fff; }
+  /* Puce météo pleine largeur : maintenant, max/min du jour, puis demain. */
+  .masthead-weather-dock .masthead-weather { display: grid !important; grid-template-columns: 1fr; gap: 4px; width: 100%; }
+  .masthead-weather-dock .weather-chip { background: rgba(42, 46, 54, .92) !important; color: #fff; }
   .masthead-weather-dock .weather-chip { width: 100%; justify-content: flex-start; gap: 5px; padding: 0 7px; font-weight: 650; }
-  .masthead-weather-dock .masthead-sports { width: 100%; height: auto !important; max-height: none !important; overflow: visible !important; }
-  .masthead-weather-dock .masthead-status .sports-chip {
-    width: 100%; max-width: none; height: auto !important; min-height: 44px;
-    border-radius: 6px !important; padding: 5px 10px 5px 7px; gap: 6px; font-weight: 700; align-items: center;
+  .masthead-weather-dock .weather-chip__today,
+  .masthead-weather-dock .weather-chip__tomorrow {
+    display: inline-flex; align-items: center; gap: 4px; flex: 0 0 auto; white-space: nowrap;
+    font-variant-numeric: tabular-nums; font-weight: 650;
   }
-  .masthead-weather-dock .sports-chip__line,
-  .masthead-weather-dock .sports-chip__line-inner { justify-content: flex-start !important; text-align: left !important; }
-  .masthead-weather-dock .sports-chip__body { display: flex; flex-direction: column; align-items: flex-start !important; text-align: left !important; min-width: 0; flex: 1 1 auto; }
-  .masthead-weather-dock .masthead-status .sports-chip__sub {
-    display: block !important; font-size: 9px; font-weight: 600; opacity: .72;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  .masthead-weather-dock .weather-chip__today { margin-left: auto; gap: 7px; }
+  .masthead-weather-dock .weather-chip__tomorrow {
+    margin-left: 8px; padding-left: 8px; border-left: 1px solid rgba(255, 255, 255, 0.28);
   }
+  .masthead-weather-dock .weather-chip__label { font-weight: 600; opacity: .72; }
+  .masthead-weather-dock .weather-chip__tomorrow .weather-chip__label { margin-right: 1px; }
+  .masthead-weather-dock .weather-chip .weather-chip__tomorrow-icon { width: 18px; height: 18px; }
+  .masthead-weather-dock .weather-chip--attente .weather-chip__today,
+  .masthead-weather-dock .weather-chip--attente .weather-chip__tomorrow-temp { opacity: .6; }
+  @media (max-width: 374.98px) {
+    .masthead-weather-dock .weather-chip__today { gap: 5px; }
+    .masthead-weather-dock .weather-chip__tomorrow { margin-left: 6px; padding-left: 6px; }
+  }
+}
+
+
+/* Puce météo élargie sous la radio (téléphone, tablette, et repli bureau
+ * si la rangée du mât est trop juste). Verre ardoise, ton de condition. */
+.masthead-weather-dock:not(:empty) { padding: 8px var(--pad, 24px) 0; }
+.masthead-weather-dock:not(:has(.weather-chip)) { display: none; }
+.masthead-weather-dock .masthead-status {
+  display: flex !important;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  width: 100%;
+  overflow: visible;
+}
+.masthead-weather-dock .masthead-weather { display: grid !important; grid-template-columns: 1fr; gap: 4px; width: 100%; }
+.masthead-weather-dock .weather-chip {
+  width: 100%;
+  justify-content: flex-start;
+  gap: 5px;
+  padding: 0 10px;
+  font-weight: 650;
+  border-radius: var(--mat-rayon, 16px) !important;
+}
+.masthead-weather-dock .weather-chip__today { margin-left: auto; gap: 7px; }
+.masthead-weather-dock .weather-chip__tomorrow {
+  margin-left: 8px;
+  padding-left: 8px;
+  border-left: 1px solid rgba(255, 255, 255, 0.28);
+}
+.masthead-weather-dock .weather-chip__label { font-weight: 600; opacity: .72; }
+.masthead-weather-dock .weather-chip__tomorrow .weather-chip__label { margin-right: 1px; }
+.masthead-weather-dock .weather-chip .weather-chip__tomorrow-icon { width: 18px; height: 18px; }
+.masthead-weather-dock .weather-chip--attente .weather-chip__today,
+.masthead-weather-dock .weather-chip--attente .weather-chip__tomorrow-temp { opacity: .6; }
+@media (max-width: 374.98px) {
+  .masthead-weather-dock .weather-chip { padding: 0 8px; gap: 4px; }
+  .masthead-weather-dock .weather-chip__today { gap: 4px; }
+  .masthead-weather-dock .weather-chip__tomorrow { margin-left: 4px; padding-left: 4px; }
+}
+
+/* Bandeau sports sous la radio (parité LE-RADAR PR 394) : hors du mât,
+ * avant la nav et le fil. Hauteur réservée dès le premier paint pour
+ * éviter un saut quand le JS peint les puces. */
+.masthead-sports-strip {
+  display: none;
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 8px var(--pad, 24px);
+  box-sizing: border-box;
+  gap: 6px;
+  align-items: stretch;
+  min-width: 0;
+}
+.masthead-sports-strip:not([hidden]),
+.masthead-sports-strip[hidden]:not(.is-empty) {
+  min-height: 60px;
+  align-items: stretch;
+  display: flex;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+.masthead-sports-strip[hidden]:not(.is-empty) {
+  visibility: hidden;
+  pointer-events: none;
+  opacity: 0;
+}
+.masthead-sports-strip.is-empty {
+  display: none !important;
+  min-height: 0;
+}
+.masthead-sports-strip.masthead-sports--split {
+  display: flex;
+  gap: 6px;
+}
+.masthead-sports-strip .sports-chip,
+.masthead-sports-strip .masthead-sports__chip {
+  flex: 1 1 0;
+  width: auto;
+  max-width: none;
+  height: auto !important;
+  min-height: 44px;
+  max-height: none !important;
+  padding: 5px 10px 5px 7px;
+  border-radius: 6px !important;
+  align-items: center;
+  overflow: hidden;
+}
+.masthead-sports-strip .sports-chip .sports-chip__body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  min-width: 0;
+}
+.masthead-sports-strip .sports-chip .sports-chip__sub {
+  display: block !important;
+  font-size: 9px;
+  font-weight: 600;
+  opacity: 0.72;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.masthead-sports-strip .sports-chip .sports-chip__line,
+.masthead-sports-strip .sports-chip .sports-chip__line-inner {
+  font-size: var(--mat-texte, 11px);
+  line-height: 1.35;
+  justify-content: flex-start;
+  text-align: left;
+}
+@media (max-width: 720px) {
+  .masthead-sports-strip {
+    padding: 4px 18px 2px;
+    width: 100%;
+  }
+  .masthead-sports-strip:not([hidden]),
+  .masthead-sports-strip[hidden]:not(.is-empty) {
+    /* 4 + puce (~48) + 2, plancher anti-saut un peu sous les 60 px du Radar. */
+    min-height: 54px;
+  }
+  .masthead-sports-strip .sports-chip,
+  .masthead-sports-strip .masthead-sports__chip {
+    width: 100%;
+    max-width: none;
+    font-weight: 700;
+    gap: 6px;
+  }
+}
+
+/* Match en cours (case « En cours » du Socle, jamais déduit de l’horloge). */
+.sports-chip--live {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 0 0 1px color-mix(in srgb, #dc2626 58%, transparent);
+}
+.sports-chip--live .sports-chip__glyph {
+  color: #fecaca;
+}
+
+/* Sous-ligne trop longue : boucle continue (parité LE-RADAR PR 404/408). */
+.sports-chip--match {
+  --sports-loop-gap: 48px;
+  --sports-scroll-duration-sub: 8s;
+  --sports-scroll-delay: 1.6s;
+}
+.sports-chip--match.is-sub-overflowing .sports-chip__sub-text {
+  max-width: none;
+  overflow: visible;
+  text-overflow: clip;
+  animation: sports-chip-scroll-sub var(--sports-scroll-duration-sub, 8s) linear var(--sports-scroll-delay, 1.6s) infinite backwards;
+  will-change: transform;
+}
+.sports-chip__sub-text:has(> .sports-chip__loop) {
+  position: relative;
+  padding-right: var(--sports-loop-gap, 48px);
+}
+.sports-chip__loop {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  display: inline-block;
+  width: max-content;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+  white-space: nowrap;
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  animation: none !important;
+  transform: none !important;
+  pointer-events: none;
+}
+@keyframes sports-chip-scroll-sub {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sports-chip.is-sub-overflowing .sports-chip__sub-text {
+    animation: none;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: clip;
+  }
+  .sports-chip__loop { display: none !important; }
 }
 
 /* Cibles tactiles ≥ 44 px (t350u) sans changer l’apparence : zone élargie
@@ -3250,7 +3751,311 @@ html {
 
 /* Pied mobile (t350u) : pas de « · » orphelin en début de ligne. */
 @media (max-width: 720px) {
-  .site-foot__nav .site-foot__sep, .site-foot__links .site-foot__sep { display: none; }
-  .site-foot__nav, .site-foot__links { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+  .site-foot__nav .site-foot__sep,
+  .site-foot__links .site-foot__sep,
+  .site-foot__built .site-foot__sep { display: none; }
+  .site-foot__nav, .site-foot__links, .site-foot__built { display: flex; flex-wrap: wrap; gap: 4px 18px; }
   .site-foot { padding-bottom: 88px; }
+}
+
+/* Partage d’un article : boutons simples, sans script tiers. */
+.share {
+  margin: 1.2rem 0 0.4rem;
+}
+.share__label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin: 0 0 0.4rem;
+}
+.share__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.share__btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid currentColor;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.85rem;
+  line-height: 1.2;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  text-decoration: none;
+  cursor: pointer;
+}
+.share__btn:hover,
+.share__btn:focus-visible {
+  background: var(--accent, #6c2163);
+  color: #fff;
+  border-color: transparent;
+}
+.search-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 0.8rem;
+  align-items: end;
+  margin: 1rem 0 1.4rem;
+}
+.search-form label {
+  flex: 1 1 16rem;
+}
+.search-form label {
+  font: 600 0.9rem/1.3 var(--sans);
+  color: var(--ink);
+}
+.search-form input[type="search"] {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 46px;
+  margin-top: 0.35rem;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--rule-strong, #14161a);
+  border-radius: 8px;
+  background: var(--bg, #fff);
+  color: var(--ink);
+  font: 500 1rem/1.3 var(--sans);
+}
+/* Bouton à la hauteur du champ, à la couleur du journal (il était minuscule, sans style). */
+.search-form button[type="submit"] {
+  min-height: 46px;
+  padding: 0 1.4rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent, #6c2163);
+  color: #fff;
+  font: 700 0.95rem/1 var(--sans);
+  cursor: pointer;
+}
+.search-form button[type="submit"]:hover,
+.search-form button[type="submit"]:focus-visible {
+  filter: brightness(1.1);
+  outline: 2px solid var(--accent, #6c2163);
+  outline-offset: 2px;
+}
+@media (max-width: 600px) {
+  .search-form button[type="submit"] { width: 100%; }
+}
+.search-results {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+/* Site statique : résultats en liste, avec la typographie des cartes. */
+.search-results li {
+  margin: 0;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+.search-results li > a {
+  font: 700 1.25rem/1.25 var(--serif, Georgia, serif);
+  color: var(--ink);
+  text-decoration: none;
+}
+.search-results li > a:hover,
+.search-results li > a:focus-visible { text-decoration: underline; }
+.search-results li > p { margin: 0.35rem 0 0; color: var(--ink-soft, var(--ink)); }
+.revue-actions {
+  margin: 0 0 1.5rem;
+}
+.revue-piece {
+  margin: 0 0 2.2rem;
+  break-inside: avoid;
+}
+.revue-piece h2 {
+  margin: 0 0 0.4rem;
+}
+@media print {
+  .share,
+  .revue-actions,
+  .news-search {
+    display: none !important;
+  }
+}
+
+/* ─────────────── RÉSEAUX SOCIAUX (mât et pied de page) ───────────────
+ * Mêmes icônes et même comportement que LE-RADAR (style-chrome.css,
+ * .site-foot__social) : monochromes au repos, couleur principale du journal
+ * au survol et au focus clavier, cible tactile de 44 px. */
+.social-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+}
+.social-links a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: var(--muted);
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+.social-links svg { width: 20px; height: 20px; display: block; }
+@media (hover: hover) and (pointer: fine) {
+  .social-links a:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); text-decoration: none; }
+}
+.social-links a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; color: var(--accent); }
+.site-foot__social { margin: 10px 0 0 -12px; }
+.masthead-social { margin-right: -12px; }
+.masthead--illustrated .masthead-social a { color: rgba(255, 255, 255, 0.92); filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55)); }
+@media (hover: hover) and (pointer: fine) {
+  .masthead--illustrated .masthead-social a:hover { color: var(--accent); background: rgba(255, 255, 255, 0.92); filter: none; }
+}
+.masthead--illustrated .masthead-social a:focus-visible { color: var(--accent); background: rgba(255, 255, 255, 0.92); outline-color: #fff; filter: none; }
+@media (max-width: 640px) {
+  .masthead-meta { flex-wrap: wrap; }
+  .masthead-social { flex-wrap: nowrap; width: calc(100% + 16px); margin-left: -8px; margin-right: -8px; gap: 0; }
+  .masthead-social a { flex: 1 1 0; min-width: 28px; max-width: 44px; height: 40px; }
+}
+@media print { .social-links { display: none !important; } }
+
+
+/* ---------------------------------------------------------------------------
+ * Mobile : menu de rubriques façon LE-RADAR (.site-sections).
+ * Ligne de liens texte séparés par des points, sans onglets ni bouton
+ * pleine largeur « Toutes les rubriques ». Toutes les rubriques restent
+ * visibles (retour à la ligne si besoin). Les pastilles du mât gardent
+ * leur cible tactile de 44 px (::before).
+ * ------------------------------------------------------------------------- */
+@media (max-width: 720px) {
+  .nav-wrap {
+    padding-top: 0;
+    background: var(--bg);
+  }
+  .nav-shell,
+  .nav-shell.has-overflow {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+  .nav,
+  .nav-shell.has-overflow:not(.is-expanded) .nav,
+  .nav-shell.is-expanded .nav,
+  .nav-shell.has-overflow .nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 3px 0;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0;
+    border: 0;
+    font-size: 12px;
+  }
+  .nav-shell.has-overflow:not(.is-expanded) .nav::after {
+    display: none !important;
+  }
+  .nav a,
+  .nav a.nav-section,
+  .nav a[aria-current="page"] {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 0;
+    border-bottom: 0;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    line-height: 1.3;
+  }
+  .nav a + a::before {
+    content: "·";
+    display: inline;
+    margin: 0 7px;
+    color: var(--rule);
+    font-weight: 400;
+    pointer-events: none;
+  }
+  .nav a:hover,
+  .nav a.nav-section:hover,
+  .nav a[aria-current="page"],
+  .nav a.nav-section[aria-current="page"] {
+    color: var(--accent);
+    border-bottom: 0;
+    text-decoration: none;
+  }
+  .nav-toggle,
+  .nav-shell.has-overflow .nav-toggle {
+    display: none !important;
+  }
+}
+
+/*
+ * Placement de la météo.
+ * Sous 1100 px, la colonne fait 800 px : la puce élargie quitte le mât
+ * (le JS la pose sous la radio). On la cache tant qu’elle n’est pas
+ * dockée, pour qu’elle ne clignote pas à côté des boutons.
+ * À partir de 1100 px, elle reste dans la rangée, collée à la date,
+ * à sa largeur naturelle. Les boutons gardent la colonne de droite.
+ * Max, min et « Demain » restent lisibles ; le toponyme n’est pas ellipsé.
+ */
+@media (min-width: 721px) {
+  /* La météo quitte la grille sous 1100 px. Sans cette colonne explicite,
+     les boutons glisseraient contre la date. Ils restent à droite. */
+  .masthead-utility > .masthead-tools {
+    grid-column: 3;
+    justify-self: end;
+  }
+}
+@media (max-width: 1099.98px) {
+  .masthead-status:not(.masthead-status--docked),
+  .masthead-utility > .masthead-weather:not(.masthead-weather--docked) {
+    display: none !important;
+  }
+}
+@media (min-width: 1100px) {
+  .masthead-utility > .masthead-status:not(.masthead-status--docked) {
+    width: max-content;
+    max-width: 100%;
+    flex: 0 0 auto;
+    overflow: visible;
+    justify-self: start;
+  }
+  .masthead-utility > .masthead-status:not(.masthead-status--docked) .masthead-weather,
+  .masthead-utility > .masthead-status:not(.masthead-status--docked) .weather-chip,
+  .masthead-utility > .masthead-status:not(.masthead-status--docked) .masthead-weather__city {
+    width: max-content;
+    max-width: none;
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+  .masthead-utility > .masthead-status:not(.masthead-status--docked) .weather-chip__name,
+  .masthead-utility > .masthead-status:not(.masthead-status--docked) .masthead-weather__name {
+    flex: 0 0 auto;
+    overflow: visible;
+    text-overflow: clip;
+  }
+  .masthead-utility > .masthead-status:not(.masthead-status--docked) .weather-chip__today,
+  .masthead-utility > .masthead-status:not(.masthead-status--docked) .weather-chip__tomorrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    flex: 0 0 auto;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    font-weight: 650;
+  }
+  .masthead-utility > .masthead-status:not(.masthead-status--docked) .weather-chip__today {
+    margin-left: 2px;
+    gap: 6px;
+  }
+  .masthead-utility > .masthead-status:not(.masthead-status--docked) .weather-chip__tomorrow {
+    margin-left: 6px;
+    padding-left: 6px;
+    border-left: 1px solid rgba(255, 255, 255, 0.28);
+  }
+  .masthead-utility > .masthead-status:not(.masthead-status--docked) .weather-chip__label {
+    font-weight: 600;
+    opacity: .72;
+  }
+  .masthead-utility > .masthead-status:not(.masthead-status--docked) .weather-chip .weather-chip__tomorrow-icon {
+    width: 16px;
+    height: 16px;
+  }
 }

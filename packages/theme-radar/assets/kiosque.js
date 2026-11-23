@@ -246,6 +246,17 @@
     resizeBound: false,
   };
 
+
+  function applyMastheadSrc(img, item) {
+    if (!img || !item) return;
+    if (item.srcset) img.setAttribute('srcset', item.srcset);
+    else img.removeAttribute('srcset');
+    if (item.sizes) img.setAttribute('sizes', item.sizes);
+    else if (item.srcset) img.setAttribute('sizes', '100vw');
+    else img.removeAttribute('sizes');
+    img.src = resolveAssetUrl(item.src);
+  }
+
   function resolveAssetUrl(src) {
     if (!src) return '';
     try { return new URL(src, window.location.href).href; }
@@ -263,15 +274,56 @@
     }
   }
 
-  function readMastheadImages() {
+  function readMastheadPayload() {
     var data = document.getElementById('masthead-backgrounds');
-    if (!data) return [];
-    var images = [];
-    try { images = JSON.parse(data.textContent || '[]'); } catch (_) { images = []; }
-    if (!Array.isArray(images)) return [];
-    return images.filter(function (item) { return item && item.src; }).map(function (item) {
+    if (!data) return { randomOrder: true, images: [] };
+    var parsed;
+    try { parsed = JSON.parse(data.textContent || '[]'); } catch (_) { parsed = []; }
+    if (Array.isArray(parsed)) return { randomOrder: true, images: parsed };
+    var images = Array.isArray(parsed && parsed.images) ? parsed.images : [];
+    return { randomOrder: parsed.randomOrder !== false, images: images };
+  }
+
+  function readMastheadImages() {
+    return readMastheadPayload().images.filter(function (item) { return item && item.src; }).map(function (item) {
       return Object.assign({}, item, { src: resolveAssetUrl(item.src) });
     });
+  }
+
+  function mastheadRandomOrder() {
+    return readMastheadPayload().randomOrder !== false;
+  }
+
+  function mastheadRandInt(n) {
+    if (n <= 1) return 0;
+    try {
+      if (window.BgRotation && typeof window.BgRotation.randInt === 'function') {
+        return window.BgRotation.randInt(n);
+      }
+    } catch (_) {}
+    try {
+      if (window.crypto && crypto.getRandomValues) {
+        var buf = new Uint32Array(1);
+        var max = 0x100000000;
+        var limit = max - (max % n);
+        var x;
+        do { crypto.getRandomValues(buf); x = buf[0]; } while (x >= limit);
+        return x % n;
+      }
+    } catch (_) {}
+    return Math.floor(Math.random() * n);
+  }
+
+  function preloadMastheadIndex(index) {
+    var images = readMastheadImages();
+    var item = images[index];
+    if (!item || !item.src) return;
+    try {
+      var preload = new Image();
+      preload.decoding = 'async';
+      if (item.srcset) preload.srcset = item.srcset;
+      preload.src = item.src;
+    } catch (_) {}
   }
 
   function liveMastheadImage() {
@@ -339,7 +391,7 @@
     masthead?.classList.remove('masthead--image-error');
     var nextSrc = resolveAssetUrl(item.src);
     var current = image.currentSrc || image.getAttribute('src') || '';
-    if (!sameSrc(current, nextSrc)) image.src = nextSrc;
+    if (!sameSrc(current, nextSrc) || item.srcset) applyMastheadSrc(image, item);
     function place() {
       masthead?.classList.remove('masthead--image-error');
       image.style.objectPosition = computeObjectPosition(item, image, masthead);
@@ -357,6 +409,11 @@
     updateMastheadCredit(item);
     mastheadBgState.hasShown = true;
     markMastheadPhotoReady();
+    var images = readMastheadImages();
+    var nextIndex = mastheadRandomOrder()
+      ? pickNextMastheadIndex()
+      : (mastheadBgState.index + 1) % Math.max(1, images.length);
+    preloadMastheadIndex(nextIndex);
   }
 
   function showMastheadIndex(next, options) {
@@ -444,8 +501,8 @@
         position = item.backgroundPosition || '50% 50%';
       }
       incoming.style.objectPosition = position;
-      if (!sameSrc(image.currentSrc || image.getAttribute('src') || '', nextSrc)) {
-        image.src = nextSrc;
+      if (!sameSrc(image.currentSrc || image.getAttribute('src') || '', nextSrc) || item.srcset) {
+        applyMastheadSrc(image, item);
       }
       image.style.objectPosition = position;
       updateMastheadCredit(item);
@@ -489,7 +546,8 @@
       if (!sameSrc(images[i].src, current)) candidates.push(i);
     }
     if (!candidates.length) return (mastheadBgState.index + 1) % images.length;
-    return candidates[Math.floor(Math.random() * candidates.length)];
+    if (!mastheadRandomOrder()) return (mastheadBgState.index + 1) % images.length;
+    return candidates[mastheadRandInt(candidates.length)];
   }
 
   function rebindMastheadBackgrounds() {
@@ -498,16 +556,36 @@
     if (!images.length || !image) return;
     // Resync l’index sur la photo actuellement peinte (après applyBranding).
     var paintedSrc = image.getAttribute('src') || image.currentSrc || '';
+    var startAttr = image.getAttribute('data-masthead-start');
     mastheadBgState.index = 0;
-    for (var i = 0; i < images.length; i++) {
-      if (sameSrc(images[i].src, paintedSrc)) {
-        mastheadBgState.index = i;
-        break;
+    var found = false;
+    if (startAttr != null && startAttr !== '') {
+      var start = Number(startAttr);
+      if (isFinite(start) && start >= 0 && start < images.length) {
+        mastheadBgState.index = start;
+        found = true;
       }
+    }
+    if (!found) {
+      for (var i = 0; i < images.length; i++) {
+        if (sameSrc(images[i].src, paintedSrc)) {
+          mastheadBgState.index = i;
+          found = true;
+          break;
+        }
+      }
+    }
+    if (!found && mastheadRandomOrder() && images.length > 1 && !mastheadBgState.hasShown) {
+      mastheadBgState.index = mastheadRandInt(images.length);
+      showMastheadIndex(mastheadBgState.index, { animate: false, preservePosition: true });
     }
     // Ne pas recharger si c’est déjà la bonne photo ; marquer hasShown pour le prochain shuffle.
     mastheadBgState.hasShown = true;
     markMastheadPhotoReady();
+    var nextIndex = mastheadRandomOrder()
+      ? pickNextMastheadIndex()
+      : (mastheadBgState.index + 1) % images.length;
+    preloadMastheadIndex(nextIndex);
     cancelMastheadTransition();
     if (!image.dataset.errorBound) {
       image.dataset.errorBound = '1';
@@ -647,19 +725,38 @@
   var weatherDocked = false;
   var weatherHomeParent = null;
   var weatherHomeNext = null;
-  var WEATHER_PHONE_MQ = typeof window.matchMedia === 'function'
-    ? window.matchMedia('(max-width: 720px)')
+  var weatherDockMeasure = 0;
+  /*
+   * Sous 1100 px la colonne reste à 800 px (--maxw). La puce élargie
+   * (ville, température, max/min, demain) n’y tient pas à côté de la date
+   * et des boutons. LE-RADAR décroche à 1024 px parce que son mât est
+   * pleine largeur ; ici le palier utile est celui où la colonne passe
+   * à 1180 px. Au-dessus, la même puce reste dans la rangée du mât.
+   */
+  var WEATHER_DOCK_MQ = typeof window.matchMedia === 'function'
+    ? window.matchMedia('(max-width: 1099.98px)')
     : null;
 
   /**
-   * Dock mobile : on déplace le bandeau .masthead-status (météo + sports)
-   * sous le tuner, pour ne pas écraser le mât et éviter le clipping.
-   * Repli : ancienne cible .masthead-weather seule.
+   * Dock mobile : on déplace seulement la météo (.masthead-status) sous le
+   * tuner. Les cartes sports restent dans #masthead-sports-strip, sous la
+   * radio (et sous le dock), hors du mât — parité LE-RADAR PR 394.
    */
   function mastheadStatusHost() {
     return document.querySelector('[data-masthead-status]')
-      || document.querySelector('.masthead-weather[data-weather-localities]')
-      || document.querySelector('.masthead-sports[data-sports-payload]');
+      || document.querySelector('.masthead-weather[data-weather-localities]');
+  }
+
+  function syncSportsStripVisibility(host, hasItems) {
+    if (!host) return;
+    if (hasItems) {
+      host.classList.remove('is-empty');
+      host.hidden = false;
+    } else {
+      host.classList.add('is-empty');
+      host.hidden = true;
+      host.textContent = '';
+    }
   }
 
   function setMastheadWeatherDocked(docked) {
@@ -691,9 +788,47 @@
     });
   }
 
+  /* La puce mord les boutons, sort de l’écran, ou son toponyme est coupé. */
+  function weatherCrowdsToolbar() {
+    var host = mastheadStatusHost();
+    if (!host || host.closest('#masthead-weather-dock')) return false;
+    var tools = document.querySelector('.masthead-utility .masthead-tools');
+    if (!tools) return false;
+    var toolsBox = tools.getBoundingClientRect();
+    if (toolsBox.width < 1) return false;
+    var chips = host.querySelectorAll('.weather-chip, .masthead-weather__city');
+    if (!chips.length) return false;
+    for (var i = 0; i < chips.length; i++) {
+      var box = chips[i].getBoundingClientRect();
+      if (box.width < 1) continue;
+      if (box.right > toolsBox.left - 8 || box.right > window.innerWidth - 1) return true;
+      var name = chips[i].querySelector('.weather-chip__name, .masthead-weather__name');
+      if (name && name.scrollWidth > name.clientWidth + 1) return true;
+    }
+    return false;
+  }
+
   function syncMastheadWeatherDock() {
-    var shouldDock = WEATHER_PHONE_MQ ? WEATHER_PHONE_MQ.matches : (window.innerWidth <= 720);
-    setMastheadWeatherDocked(shouldDock);
+    /* Téléphone et tablette : sous la radio, entre le syntoniseur et les
+       cartes sports. Bureau : dans le mât, à côté de la date. Un seul nœud
+       est déplacé — jamais deux puces visibles. */
+    var dock = document.getElementById('masthead-weather-dock');
+    var host = mastheadStatusHost();
+    if (!dock || !host) return;
+    var narrow = Boolean(WEATHER_DOCK_MQ && WEATHER_DOCK_MQ.matches);
+    if (narrow) {
+      weatherDockMeasure += 1;
+      setMastheadWeatherDocked(true);
+      return;
+    }
+    setMastheadWeatherDocked(false);
+    var token = weatherDockMeasure += 1;
+    window.requestAnimationFrame(function () {
+      if (token !== weatherDockMeasure) return;
+      if (WEATHER_DOCK_MQ && WEATHER_DOCK_MQ.matches) return;
+      /* La puce élargie ne serre pas les boutons : elle redescend. */
+      if (weatherCrowdsToolbar()) setMastheadWeatherDocked(true);
+    });
   }
 
   /* Rotation scoreboard — ordre récent→prochain, leave puis arrive (LE-RADAR).
@@ -724,6 +859,93 @@
     sportsReducedMotion = !!(window.matchMedia
       && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   } catch (_) {}
+  var sportsLaneTimers = { result: null, next: null, live: null };
+  var sportsVisible = [];
+  var sportsSlotTimers = [];
+  var sportsWaveTimer = 0;
+  var sportsNextCursor = 0;
+  var SPORTS_CASCADE_STEP_MS = (window.KiosqueSportsBoard && window.KiosqueSportsBoard.SPORTS_CASCADE_STEP_MS) || 440;
+  var SPORTS_BOARD_HOLD_MIN_MS = (window.KiosqueSportsBoard && window.KiosqueSportsBoard.SPORTS_BOARD_HOLD_MIN_MS) || 9000;
+  var SPORTS_BOARD_HOLD_MAX_MS = (window.KiosqueSportsBoard && window.KiosqueSportsBoard.SPORTS_BOARD_HOLD_MAX_MS) || 12000;
+
+  var SPORTS_SUB_MARQUEE_PX_PER_S = 16;
+  var SPORTS_SUB_MARQUEE_MIN_SEC = 8;
+
+  /* Repris de LE-RADAR genderMark (magazine-front-page-lib.js) : (F)/(H), rien si mixte. */
+  function sportsSexKey(sex) {
+    var s = String(sex || '').trim().toLowerCase();
+    if (['f', 'w', 'women', 'woman', 'femmes', 'féminin', 'feminin', 'female'].indexOf(s) !== -1) return 'F';
+    if (['m', 'h', 'men', 'man', 'hommes', 'masculin', 'male'].indexOf(s) !== -1) return 'M';
+    if (['x', 'mixte', 'mixed', 'coed', 'co-ed', 'open', 'ouvert'].indexOf(s) !== -1) return 'X';
+    return '';
+  }
+  function genderMark(sex) {
+    var key = sportsSexKey(sex);
+    if (key === 'F') return '(F)';
+    if (key === 'M') return '(H)';
+    return '';
+  }
+  function parseSportsTimeMinutes(time) {
+    var raw = String(time || '').trim();
+    var m = raw.match(/^(\d{1,2})\s*[:hH.]\s*(\d{2})/);
+    if (!m) return Number.POSITIVE_INFINITY;
+    var hours = Number(m[1]);
+    var mins = Number(m[2]);
+    if (!isFinite(hours) || !isFinite(mins) || hours > 23 || mins > 59) return Number.POSITIVE_INFINITY;
+    return hours * 60 + mins;
+  }
+  function sportsPublicationTimeZone() {
+    return (sportsPayloadCache && sportsPayloadCache.timeZone) || 'America/Toronto';
+  }
+  function sportsRelativeDayLabel(iso, now) {
+    var day = String(iso || '').slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return '';
+    try {
+      var parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: sportsPublicationTimeZone(),
+        year: 'numeric', month: '2-digit', day: '2-digit',
+      }).formatToParts(now || new Date());
+      var y = (parts.find(function (p) { return p.type === 'year'; }) || {}).value;
+      var m = (parts.find(function (p) { return p.type === 'month'; }) || {}).value;
+      var d = (parts.find(function (p) { return p.type === 'day'; }) || {}).value;
+      var todayKey = y && m && d ? y + '-' + m + '-' + d : '';
+      if (!todayKey) return '';
+      if (day === todayKey) return 'Aujourd’hui';
+      var shift = function (delta) {
+        var noon = new Date(todayKey + 'T12:00:00');
+        noon.setDate(noon.getDate() + delta);
+        return noon.getFullYear() + '-' + String(noon.getMonth() + 1).padStart(2, '0') + '-' + String(noon.getDate()).padStart(2, '0');
+      };
+      if (day === shift(1)) return 'Demain';
+      if (day === shift(-1)) return 'Hier';
+      return '';
+    } catch (_) { return ''; }
+  }
+  function sportsSlideIsLive(slide) {
+    return !!(slide && (slide.mode === 'live' || (slide.game && slide.game.live)));
+  }
+  function sportsSlideSportKey(slide) {
+    return String((slide && slide.game && slide.game.sport) || (slide && slide.team && slide.team.sport) || '').toLowerCase();
+  }
+  function sportsInterleaveBySport(items, compare) {
+    var sorted = items.slice().sort(compare);
+    var buckets = {};
+    var order = [];
+    sorted.forEach(function (slide) {
+      var key = sportsSlideSportKey(slide) || '_';
+      if (!buckets[key]) { buckets[key] = []; order.push(key); }
+      buckets[key].push(slide);
+    });
+    var out = [];
+    var added = true;
+    while (added) {
+      added = false;
+      order.forEach(function (key) {
+        if (buckets[key].length) { out.push(buckets[key].shift()); added = true; }
+      });
+    }
+    return out;
+  }
 
   function clearSportsRotateTimer() {
     if (sportsTimer) {
@@ -822,21 +1044,34 @@
    * résultats les plus récents d’abord, puis prochains les plus proches.
    * Plus de brassage total (ressenti « aléatoire »).
    */
+  function sportsCompareDateTime(a, b, newestFirst) {
+    var da = String((a && a.game && a.game.date) || '');
+    var db = String((b && b.game && b.game.date) || '');
+    if (da !== db) return newestFirst ? db.localeCompare(da) : da.localeCompare(db);
+    var ta = parseSportsTimeMinutes(a && a.game && a.game.time);
+    var tb = parseSportsTimeMinutes(b && b.game && b.game.time);
+    if (ta !== tb) return newestFirst ? tb - ta : ta - tb;
+    return 0;
+  }
+
+  /**
+   * Alternance par sport (PR 381 du Radar), tri horaire numérique (PR 364),
+   * directs d’abord. Les scores et les à-venir s’intercalent.
+   */
   function orderSportsDeck(items) {
-    return items.slice().sort(function (a, b) {
-      var modeRank = function (s) { return s && s.mode === 'result' ? 0 : 1; };
-      if (modeRank(a) !== modeRank(b)) return modeRank(a) - modeRank(b);
-      var da = String((a && a.game && a.game.date) || '');
-      var db = String((b && b.game && b.game.date) || '');
-      var ta = String((a && a.game && a.game.time) || '');
-      var tb = String((b && b.game && b.game.time) || '');
-      if (a && a.mode === 'result') {
-        if (db !== da) return db.localeCompare(da);
-        return tb.localeCompare(ta);
-      }
-      if (da !== db) return da.localeCompare(db);
-      return ta.localeCompare(tb);
-    });
+    var lives = items.filter(sportsSlideIsLive);
+    var results = items.filter(function (s) { return s && s.mode === 'result' && !sportsSlideIsLive(s); });
+    var nexts = items.filter(function (s) { return s && s.mode !== 'result' && !sportsSlideIsLive(s); });
+    var left = sportsInterleaveBySport(results, function (a, b) { return sportsCompareDateTime(a, b, true); });
+    var right = sportsInterleaveBySport(nexts, function (a, b) { return sportsCompareDateTime(a, b, false); });
+    var mixed = [];
+    var max = Math.max(left.length, right.length);
+    var i;
+    for (i = 0; i < max; i += 1) {
+      if (left[i]) mixed.push(left[i]);
+      if (right[i]) mixed.push(right[i]);
+    }
+    return lives.concat(mixed);
   }
 
   function sportsTeamList(payload) {
@@ -883,7 +1118,7 @@
       }
       if (next) {
         var nextSlide = {
-          mode: 'next',
+          mode: next.live ? 'live' : 'next',
           team: team,
           game: next,
           key: 'n:' + team.id + ':' + next.date + ':' + (next.opponentCode || next.opponent),
@@ -914,8 +1149,16 @@
     }
   }
 
+  function formatSportsChipClock(time) {
+    if (!time) return '';
+    return String(time).replace(/(\d{1,2})\s*[:.]\s*(\d{2})/, '$1 h $2').replace(/:/g, ' h ');
+  }
+
   function formatSportsChipWhen(iso, time) {
-    if (!iso) return '';
+    if (!iso) return formatSportsChipClock(time);
+    var clock = formatSportsChipClock(time);
+    var rel = sportsRelativeDayLabel(iso);
+    if (rel) return [rel, clock].filter(Boolean).join(' · ');
     var label = '';
     try {
       label = new Intl.DateTimeFormat('fr-CA', {
@@ -925,10 +1168,7 @@
     } catch (_) {
       label = iso;
     }
-    if (time) {
-      label += ' · ' + String(time).replace(/(\d{1,2})\s*[:.]\s*(\d{2})/, '$1 h $2').replace(/:/g, ' h ');
-    }
-    return label;
+    return [label, clock].filter(Boolean).join(' · ');
   }
 
   /** Domicile « reçoit », extérieur « à » (ton presse LE-RADAR). */
@@ -944,19 +1184,45 @@
   function sportsMatchSubLine(display) {
     var g = (display && display.game) || {};
     var team = (display && display.team) || {};
-    var when = formatSportsChipWhen(g.date, g.time);
-    if (g.competition) return [when, String(g.competition).trim()].filter(Boolean).join(' · ');
+    var when = sportsSlideIsLive(display)
+      ? ['En cours', formatSportsChipClock(g.time)].filter(Boolean).join(' · ')
+      : formatSportsChipWhen(g.date, g.time);
     var sportLabel = team.sportLabel || g.sport || '';
-    var sex = team.sex;
-    var sexLabel = sex === 'F' ? 'féminin' : sex === 'M' ? 'masculin' : sex === 'mixte' ? 'mixte' : '';
-    var meta = [sportLabel, sexLabel].filter(Boolean).join(' ');
-    return [when, meta].filter(Boolean).join(' · ');
+    var sport = [sportLabel, genderMark(team.sex)].filter(Boolean).join(' ');
+    var competition = String(g.competition || '').trim();
+    return [when, sport, competition].filter(Boolean).join(' · ');
   }
 
   /**
    * Marquee type bandeau météo LE-RADAR / RDS :
    * pauses aux extrémités dans les keyframes ; dwell = 1 aller-retour complet.
    */
+  function applySportsSubMarquee(chip) {
+    var view = chip && chip.querySelector('.sports-chip__sub');
+    var inner = chip && chip.querySelector('.sports-chip__sub-text');
+    if (!view || !inner) return 0;
+    chip.classList.remove('is-sub-overflowing');
+    inner.classList.remove('is-sports-sub-marquee');
+    var clone = inner.querySelector('.sports-chip__loop');
+    if (clone) clone.remove();
+    inner.style.removeProperty('--sports-scroll-duration-sub');
+    if (sportsReducedMotion) return 0;
+    var overflow = Math.ceil(inner.scrollWidth - view.clientWidth) + 2;
+    if (overflow <= 4) return 0;
+    var durationSec = Math.max(
+      SPORTS_SUB_MARQUEE_MIN_SEC,
+      overflow / SPORTS_SUB_MARQUEE_PX_PER_S,
+    );
+    var loop = inner.cloneNode(true);
+    loop.className = 'sports-chip__loop';
+    loop.setAttribute('aria-hidden', 'true');
+    inner.appendChild(loop);
+    inner.classList.add('is-sports-sub-marquee');
+    chip.classList.add('is-sub-overflowing');
+    inner.style.setProperty('--sports-scroll-duration-sub', durationSec.toFixed(1) + 's');
+    return Math.round(durationSec * 1000);
+  }
+
   function applySportsLineMarquee(viewport, onReady) {
     if (!viewport) {
       if (onReady) onReady(SPORTS_ROTATE_MIN_MS);
@@ -967,9 +1233,20 @@
       if (onReady) onReady(SPORTS_ROTATE_MIN_MS);
       return;
     }
+    var chip = viewport.closest('.sports-chip');
     viewport.classList.remove('is-sports-marquee');
     viewport.style.removeProperty('--sports-marquee-shift');
     viewport.style.removeProperty('--sports-marquee-duration');
+    if (chip) {
+      chip.classList.remove('is-sub-overflowing');
+      var subInner = chip.querySelector('.sports-chip__sub-text');
+      if (subInner) {
+        subInner.classList.remove('is-sports-sub-marquee');
+        var oldLoop = subInner.querySelector('.sports-chip__loop');
+        if (oldLoop) oldLoop.remove();
+        subInner.style.removeProperty('--sports-scroll-duration-sub');
+      }
+    }
     if (sportsReducedMotion) {
       if (onReady) onReady(SPORTS_ROTATE_MIN_MS);
       return;
@@ -993,7 +1270,8 @@
           /* 2 sens + petite marge pour finir le hold de fin de cycle. */
           dwellMs = Math.round(durationSec * 1000) * 2 + 400;
         }
-        if (onReady) onReady(Math.max(SPORTS_ROTATE_MIN_MS, dwellMs));
+        var subMs = applySportsSubMarquee(chip);
+        if (onReady) onReady(Math.max(SPORTS_ROTATE_MIN_MS, dwellMs, subMs));
       });
     });
   }
@@ -1039,9 +1317,10 @@
    *   haut — noms + score / « reçoit »|« à »
    *   bas  — date · sport (jamais de marquee sur le score ; lecture + rotation)
    */
-  function paintSportsChip(host, display, animate) {
+  function paintSportsChip(host, display, animate, opts) {
     if (!host || !display) return;
-    host.textContent = '';
+    opts = opts || {};
+    if (!opts.append) host.textContent = '';
     var team = display.team;
     var code = String(team.code || 'EQ').toUpperCase().slice(0, 4);
     var sport = display.game.sport || team.sport || '';
@@ -1052,6 +1331,9 @@
     var chip = document.createElement(href ? 'a' : 'span');
     chip.className = 'sports-chip masthead-sports__chip sports-chip--match';
     if (desktop) chip.classList.add('sports-chip--rich');
+    if (display.mode === 'result') chip.classList.add('sports-chip--result');
+    else if (sportsSlideIsLive(display)) chip.classList.add('sports-chip--live');
+    else chip.classList.add('sports-chip--next');
     if (animate && !sportsReducedMotion) chip.classList.add('is-arriving');
     chip.style.setProperty('--sports-tone', tone);
     if (team.colors && team.colors.primary) {
@@ -1135,7 +1417,7 @@
       ];
 
       subText.textContent = subLine;
-      titleParts = ['Prochain match', sportLabel, homeCode + ' ' + verb + ' ' + nextCompact];
+      titleParts = [sportsSlideIsLive(display) ? 'En cours' : 'Prochain match', sportLabel, homeCode + ' ' + verb + ' ' + nextCompact];
       if (subLine) titleParts.push(subLine);
       if (n.home === true) titleParts.push('Domicile');
       else if (n.home === false) titleParts.push('Extérieur');
@@ -1155,21 +1437,35 @@
     chip.dataset.sportsSport = sport || '';
     chip.dataset.sportsDensity = desktop ? 'rich' : 'compact';
 
-    host.appendChild(chip);
+    if (opts.before && opts.before.parentNode === host) host.insertBefore(chip, opts.before);
+    else host.appendChild(chip);
     host.hidden = false;
+    /* Au bureau aussi : « Boomerang (François-Xavier-Garneau) » dépasse la
+       puce et le débordement caché coupe le mot. On passe au surnom, puis
+       au sigle, avant tout défilement. */
     sportsAbregerSiTropLong(chip);
 
-    /* Pas de marquee sur 2 lignes (FG A LE-RADAR) : dwell lecture ~9–12 s. */
+    /* Titre : aller-retour si débordement. Sous-ligne : boucle lente (PR 404/408). */
     var readDwell = SPORTS_ROTATE_MIN_MS + 3500;
-    if (animate && !sportsReducedMotion) {
-      window.setTimeout(function () {
-        if (!chip.isConnected) return;
-        chip.classList.remove('is-arriving');
+    applySportsLineMarquee(line, function (dwell) {
+      readDwell = Math.max(readDwell, dwell);
+      if (opts.split) return;
+      if (animate && !sportsReducedMotion) {
+        window.setTimeout(function () {
+          if (!chip.isConnected) return;
+          chip.classList.remove('is-arriving');
+          scheduleSportsRotate(readDwell);
+        }, SPORTS_ARRIVE_MS);
+      } else {
         scheduleSportsRotate(readDwell);
+      }
+    });
+    if (opts.split && animate && !sportsReducedMotion) {
+      window.setTimeout(function () {
+        if (chip.isConnected) chip.classList.remove('is-arriving');
       }, SPORTS_ARRIVE_MS);
-    } else {
-      scheduleSportsRotate(readDwell);
     }
+    return chip;
   }
 
   /**
@@ -1202,9 +1498,237 @@
     chip.classList.toggle('is-abrege', i > 0);
   }
 
+  function sportsBoardLib() {
+    return window.KiosqueSportsBoard || null;
+  }
+
+  function sportsSlideToBoardItem(slide) {
+    if (!slide) return null;
+    return {
+      key: slide.key,
+      mode: sportsSlideIsLive(slide) ? 'live' : slide.mode,
+      live: sportsSlideIsLive(slide),
+      sport: sportsSlideSportKey(slide),
+      slide: slide,
+    };
+  }
+
+  function sportsBoardPool() {
+    return sportsSlides.map(sportsSlideToBoardItem).filter(Boolean);
+  }
+
+  function sportsStripAvailWidth(host) {
+    if (!host) return 0;
+    var w = host.clientWidth;
+    if (w > 0) return w;
+    var parent = host.parentNode;
+    if (parent && parent.clientWidth) return parent.clientWidth;
+    return window.innerWidth || 0;
+  }
+
+  function sportsBoardCount(host) {
+    var lib = sportsBoardLib();
+    var avail = sportsStripAvailWidth(host);
+    if (lib && typeof lib.sportsBoardCountFromWidth === 'function') {
+      return lib.sportsBoardCountFromWidth(avail, { desktop: sportsIsDesktopLabel() });
+    }
+    if (!sportsIsDesktopLabel()) return 1;
+    var minSlot = 240, gap = 6, maxN = avail >= 1100 ? 5 : 4;
+    var n = 1;
+    for (var tryN = maxN; tryN >= 2; tryN -= 1) {
+      if (avail >= tryN * minSlot + gap * (tryN - 1)) { n = tryN; break; }
+    }
+    return n;
+  }
+
+  function sportsUseSplitLanes(host) {
+    var count = sportsBoardCount(host || document.querySelector('.masthead-sports[data-sports-payload]'));
+    return count >= 2 && sportsSlides.length >= 2;
+  }
+
+  function sportsPickVisible(host) {
+    var lib = sportsBoardLib();
+    var n = sportsBoardCount(host);
+    var pool = sportsBoardPool();
+    var picked;
+    if (lib && typeof lib.sportsSplitVisible === 'function') {
+      picked = lib.sportsSplitVisible(pool, n);
+    } else {
+      picked = pool.slice(0, n);
+    }
+    return picked.map(function (item) { return item.slide || sportsSlides.find(function (s) { return s.key === item.key; }); }).filter(Boolean);
+  }
+
+  function sportsLanePool(lane) {
+    if (lane === 'live') return sportsSlides.filter(sportsSlideIsLive);
+    if (lane === 'result') return sportsInterleaveBySport(
+      sportsSlides.filter(function (s) { return s.mode === 'result' && !sportsSlideIsLive(s); }),
+      function (a, b) { return sportsCompareDateTime(a, b, true); },
+    );
+    return sportsInterleaveBySport(
+      sportsSlides.filter(function (s) { return s.mode !== 'result' && !sportsSlideIsLive(s); }),
+      function (a, b) { return sportsCompareDateTime(a, b, false); },
+    );
+  }
+
+  function clearSportsLaneTimers() {
+    Object.keys(sportsLaneTimers).forEach(function (lane) {
+      if (sportsLaneTimers[lane]) {
+        window.clearTimeout(sportsLaneTimers[lane]);
+        sportsLaneTimers[lane] = null;
+      }
+    });
+    clearSportsWave();
+    clearSportsSlotTimers();
+  }
+
+  function clearSportsSlotTimers() {
+    sportsSlotTimers.forEach(function (id) { if (id) window.clearTimeout(id); });
+    sportsSlotTimers = [];
+  }
+
+  function clearSportsWave() {
+    if (sportsWaveTimer) {
+      window.clearTimeout(sportsWaveTimer);
+      sportsWaveTimer = 0;
+    }
+  }
+
+  function sportsBoardHoldMs() {
+    var n = Math.max(1, sportsVisible.length);
+    var hold = Math.max(SPORTS_BOARD_HOLD_MIN_MS, 1400 * n);
+    return Math.min(SPORTS_BOARD_HOLD_MAX_MS, hold);
+  }
+
+  function sportsVisibleOccupyKeys(exceptSlot) {
+    var used = new Set();
+    sportsVisible.forEach(function (slide, i) {
+      if (i === exceptSlot || !slide || !slide.key) return;
+      used.add(slide.key);
+    });
+    return used;
+  }
+
+  function rotateSportsSlot(host, slot) {
+    if (!host || !host.isConnected || slot < 0 || slot >= sportsVisible.length) return 80;
+    var chips = host.querySelectorAll('.sports-chip');
+    var oldChip = chips[slot];
+    if (oldChip && document.activeElement && oldChip.contains(document.activeElement)) return 0;
+    var lib = sportsBoardLib();
+    var pool = sportsBoardPool();
+    var visibleItems = sportsVisible.map(sportsSlideToBoardItem);
+    var nextItem = lib && typeof lib.sportsNextForSlot === 'function'
+      ? lib.sportsNextForSlot(pool, visibleItems, slot, sportsNextCursor++)
+      : null;
+    var next = nextItem && (nextItem.slide || sportsSlides.find(function (s) { return s.key === nextItem.key; }));
+    if (!next || (sportsVisible[slot] && sportsVisible[slot].key === next.key)) return 80;
+    sportsVisible[slot] = next;
+    var replace = function () {
+      if (!host.isConnected) return;
+      var painted = paintSportsChip(host, next, true, { append: true, split: true, before: oldChip && oldChip.nextSibling });
+      if (oldChip && oldChip.parentNode) oldChip.parentNode.removeChild(oldChip);
+      if (painted) painted.dataset.sportsSlot = String(slot);
+      syncMastheadWeatherDock();
+    };
+    if (oldChip && !sportsReducedMotion) {
+      oldChip.classList.remove('is-arriving');
+      oldChip.classList.add('is-leaving');
+      oldChip.style.pointerEvents = 'none';
+      window.setTimeout(replace, SPORTS_CHIP_LEAVE_MS);
+      return SPORTS_CHIP_LEAVE_MS + SPORTS_ARRIVE_MS;
+    }
+    replace();
+    return 80;
+  }
+
+  function scheduleSportsWave(host, opts) {
+    opts = opts || {};
+    clearSportsSlotTimers();
+    clearSportsWave();
+    if (!host || !host.isConnected) return;
+    var n = sportsVisible.length;
+    if (n < 1 || sportsSlides.length < 2) return;
+    var fromSlot = opts.fromSlot | 0;
+    var firstWait = opts.firstWait !== false;
+    var stepMs = sportsReducedMotion ? 80 : SPORTS_CASCADE_STEP_MS;
+    var lib = sportsBoardLib();
+    var plan = lib && typeof lib.sportsWaveSchedule === 'function'
+      ? lib.sportsWaveSchedule(n, { stepMs: stepMs, holdMs: sportsBoardHoldMs(), firstWait: firstWait, fromSlot: fromSlot })
+      : null;
+    var step = function (index) {
+      if (!host.isConnected) return;
+      var liveN = sportsVisible.length;
+      if (liveN < 1) return;
+      if (index >= liveN) {
+        sportsWaveTimer = window.setTimeout(function () {
+          sportsWaveTimer = 0;
+          scheduleSportsWave(host, { fromSlot: 0, firstWait: false });
+        }, sportsBoardHoldMs());
+        return;
+      }
+      rotateSportsSlot(host, index);
+      sportsWaveTimer = window.setTimeout(function () { step(index + 1); }, stepMs);
+    };
+    if (firstWait) {
+      var wait = plan && plan[0] ? plan[0].at : sportsBoardHoldMs();
+      sportsWaveTimer = window.setTimeout(function () {
+        sportsWaveTimer = 0;
+        step(fromSlot);
+      }, wait);
+      return;
+    }
+    step(fromSlot);
+  }
+
+  function paintSportsSplit(host, animate) {
+    clearSportsRotateTimer();
+    clearSportsLaneTimers();
+    host.textContent = '';
+    host.classList.add('masthead-sports--split');
+    var slides = sportsPickVisible(host);
+    if (!slides.length) {
+      host.classList.remove('masthead-sports--split');
+      var fallback = orderSportsDeck(sportsSlides.slice())[0] || sportsSlides[0];
+      sportsVisible = fallback ? [fallback] : [];
+      if (fallback) paintSportsChip(host, fallback, animate);
+      return;
+    }
+    if (slides.length === 1) {
+      host.classList.remove('masthead-sports--split');
+      sportsVisible = [slides[0]];
+      paintSportsChip(host, slides[0], animate);
+      scheduleSportsWave(host, { firstWait: true });
+      return;
+    }
+    sportsVisible = slides.slice();
+    sportsVisible.forEach(function (slide, index) {
+      var painted = paintSportsChip(host, slide, animate, { append: true, split: true });
+      if (painted) painted.dataset.sportsSlot = String(index);
+    });
+    syncMastheadWeatherDock();
+    scheduleSportsWave(host, { fromSlot: 0, firstWait: true });
+  }
+
+  function renderMastheadSports(host, animate) {
+    if (sportsUseSplitLanes(host)) paintSportsSplit(host, animate);
+    else {
+      clearSportsLaneTimers();
+      host.classList.remove('masthead-sports--split');
+      refillSportsDeck(null);
+      var first = sportsDeck.shift() || sportsSlides[0];
+      sportsVisible = first ? [first] : [];
+      paintSportsChip(host, first, animate);
+      if (sportsSlides.length >= 2) scheduleSportsRotate(SPORTS_ROTATE_MIN_MS + 3500);
+    }
+  }
+
   function rotateSportsChip() {
     var host = document.querySelector('.masthead-sports[data-sports-payload]');
     if (!host || sportsSlides.length < 2) return;
+    if (sportsUseSplitLanes()) {
+      renderMastheadSports(host, true);
+      return;
+    }
     if (!sportsDeck.length) {
       var current = host.querySelector('.sports-chip');
       refillSportsDeck(current && current.dataset.sportsKey);
@@ -1239,20 +1763,19 @@
       payload = null;
     }
     if (!payload) {
-      host.remove();
+      syncSportsStripVisibility(host, false);
       return;
     }
     sportsPayloadCache = payload;
     sportsSlides = buildSportsSlides(payload);
     if (!sportsSlides.length) {
-      host.remove();
+      syncSportsStripVisibility(host, false);
       sportsPayloadCache = null;
       return;
     }
-    /* Départ = match le plus récent / prochain le plus proche (orderSportsDeck). */
-    refillSportsDeck(null);
-    var first = sportsDeck.shift() || sportsSlides[0];
-    paintSportsChip(host, first, false);
+    /* Départ : deux voies sur ordinateur, une puce sur mobile. */
+    syncSportsStripVisibility(host, true);
+    renderMastheadSports(host, false);
     syncMastheadWeatherDock();
     /* Re-peindre codes ↔ noms+institutions au passage mobile/bureau. */
     if (!initMastheadSports._densityBound) {
@@ -1262,27 +1785,136 @@
       function onDensityChange() {
         var h = document.querySelector('.masthead-sports[data-sports-payload]');
         if (!h || !sportsSlides.length) return;
-        var cur = h.querySelector('.sports-chip');
-        var key = cur && cur.dataset.sportsKey;
-        var slide = sportsSlides.find(function (s) { return s.key === key; }) || sportsSlides[0];
-        paintSportsChip(h, slide, false);
+        renderMastheadSports(h, false);
         syncMastheadWeatherDock();
       }
       if (mq) {
         if (typeof mq.addEventListener === 'function') mq.addEventListener('change', onDensityChange);
         else if (typeof mq.addListener === 'function') mq.addListener(onDensityChange);
       }
+      if (!initMastheadSports._resizeBound) {
+        initMastheadSports._resizeBound = true;
+        var resizeTimer = 0;
+        window.addEventListener('resize', function () {
+          window.clearTimeout(resizeTimer);
+          resizeTimer = window.setTimeout(onDensityChange, 180);
+        }, { passive: true });
+        document.addEventListener('visibilitychange', function () {
+          if (document.visibilityState === 'visible') onDensityChange();
+        });
+      }
     }
   }
 
-  /** Appelé après applyBranding (front éditorial) pour peindre la puce sports. */
+  /** Appelé après applyBranding (front éditorial) pour peindre sports et météo. */
   function refreshMastheadStatus() {
     initMastheadSports();
+    initMastheadWeather();
     syncMastheadWeatherDock();
   }
   try {
     window.KiosqueRefreshMasthead = refreshMastheadStatus;
   } catch (_) {}
+
+  var weatherPaintGen = 0;
+
+  /* Abréger proprement plutôt que « Saint-L… » : St-, Ste-, puis premier mot.
+     Sert aux vraies puces et aux puces d'attente. */
+  var WEATHER_ABREGER = [
+    function (n) { return n.replace(/\bSainte-/g, 'Ste-').replace(/\bSaint-/g, 'St-'); },
+    function (n) { return n.split(/-(?:du|de|des|la|le|sur)-|\s/)[0]; },
+  ];
+  function fitWeatherName(nameEl, full, status) {
+    nameEl.textContent = full;
+    var trop = function () {
+      return nameEl.scrollWidth > nameEl.clientWidth + 1 ||
+        (status && status.scrollWidth > status.clientWidth + 1);
+    };
+    for (var k = 0; k < WEATHER_ABREGER.length && trop(); k++) {
+      nameEl.textContent = WEATHER_ABREGER[k](nameEl.textContent);
+    }
+  }
+
+  /* Jour i des prévisions quotidiennes Open-Meteo (0 = aujourd’hui, 1 = demain). */
+  function dailyAt(daily, i) {
+    if (!daily || !Array.isArray(daily.temperature_2m_max)) return null;
+    var max = Number(daily.temperature_2m_max[i]);
+    var min = Number(daily.temperature_2m_min && daily.temperature_2m_min[i]);
+    if (!Number.isFinite(max) || !Number.isFinite(min)) return null;
+    return { max: Math.round(max), min: Math.round(min), code: Number(daily.weather_code && daily.weather_code[i]) };
+  }
+
+  function weatherExtrasTitle(value) {
+    var parts = [];
+    if (value.today) parts.push('aujourd’hui max ' + value.today.max + '°, min ' + value.today.min + '°');
+    if (value.tomorrow) parts.push('demain max ' + value.tomorrow.max + '°, min ' + value.tomorrow.min + '°');
+    return parts.length ? ' · ' + parts.join(' · ') : '';
+  }
+
+  /* Maximum et minimum du jour, puis « Demain » avec icône et température.
+     Visibles dans le dock (sous 1100 px) et dans le mât au bureau (CSS).
+     value null = puce d’attente (tirets, rond à la place de l’icône), même gabarit. */
+  function appendWeatherExtras(chip, value, meteoBase) {
+    if (value && !value.today && !value.tomorrow) return;
+    var span = function (cls, text) {
+      var el = document.createElement('span');
+      el.className = cls;
+      if (text != null) el.textContent = text;
+      return el;
+    };
+    var today = span('weather-chip__today');
+    var max = span('weather-chip__max');
+    max.appendChild(span('weather-chip__label', 'Max '));
+    max.appendChild(document.createTextNode(value && value.today ? value.today.max + '°' : '–°'));
+    var min = span('weather-chip__min');
+    min.appendChild(span('weather-chip__label', 'Min '));
+    min.appendChild(document.createTextNode(value && value.today ? value.today.min + '°' : '–°'));
+    today.appendChild(max);
+    today.appendChild(min);
+    if (!value || value.today) chip.appendChild(today);
+    if (value && !value.tomorrow) return;
+    var next = span('weather-chip__tomorrow');
+    next.appendChild(span('weather-chip__label', 'Demain'));
+    var icon;
+    if (value) {
+      icon = document.createElement('img');
+      icon.className = 'weather-icon-meteocon weather-chip__tomorrow-icon';
+      icon.src = meteoBase + weatherIconName(value.tomorrow.code, 1) + '.svg';
+      icon.alt = '';
+      icon.setAttribute('aria-hidden', 'true');
+      icon.width = 18;
+      icon.height = 18;
+    } else {
+      icon = span('weather-icon-meteocon weather-icon-attente weather-chip__tomorrow-icon');
+    }
+    next.appendChild(icon);
+    next.appendChild(span('weather-chip__tomorrow-temp', value ? value.tomorrow.max + '°' : '–°'));
+    chip.appendChild(next);
+  }
+
+  /* Open-Meteo sans réponse : on abandonne après 10 s, la puce d’attente se
+     retire (au lieu de rester « –° » indéfiniment). */
+  function weatherFetch(url) {
+    if (typeof AbortController !== 'function') return fetch(url);
+    var ctrl = new AbortController();
+    var timer = setTimeout(function () { ctrl.abort(); }, 10000);
+    return fetch(url, { signal: ctrl.signal }).finally(function () { clearTimeout(timer); });
+  }
+
+  function preloadWeatherIcons(urls) {
+    var each = urls.map(function (url) {
+      return new Promise(function (resolve) {
+        var img = new Image();
+        img.onload = img.onerror = function () { resolve(); };
+        img.src = url;
+        if (typeof img.decode === 'function') img.decode().then(resolve, resolve);
+      });
+    });
+    return Promise.race([
+      Promise.all(each),
+      new Promise(function (resolve) { setTimeout(resolve, 1500); }),
+    ]);
+  }
 
   function initMastheadWeather() {
     var host = document.querySelector('[data-weather-localities]');
@@ -1295,6 +1927,13 @@
         .slice(0, 4);
     } catch (_) {}
     if (!localities.length) return;
+    /* En mode socle-vivant, applyBranding pose les localités après le premier
+       init : KiosqueRefreshMasthead doit pouvoir relancer le fetch. Déjà
+       peint pour les mêmes localités → ne pas empiler les puces. */
+    var key = localities.map(function (loc) { return loc.name; }).join('|');
+    if (host.dataset.weatherReady === key && host.querySelector('.weather-chip, .masthead-weather__city')) return;
+    var gen = ++weatherPaintGen;
+    host.dataset.weatherReady = key;
     var meteoBase = host.dataset.meteoconsBase || '';
     if (!meteoBase) {
       var tokens = document.querySelector('link[href*="tokens.css"]');
@@ -1305,8 +1944,34 @@
     /* Dock immédiat sur téléphone (même avant le fetch) pour éviter un flash dans le mât. */
     syncMastheadWeatherDock();
 
+    /* Place réservée : une puce d'attente par localité (nom, rond à la place
+       de l'icône) pendant la requête, pour que le mât ne bouge pas quand la
+       vraie puce arrive. */
+    if (!host.querySelector('.weather-chip, .masthead-weather__city')) {
+      localities.forEach(function (loc) {
+        var wait = document.createElement('span');
+        wait.className = 'weather-chip masthead-weather__city weather-chip--attente';
+        wait.setAttribute('aria-hidden', 'true');
+        var dot = document.createElement('span');
+        dot.className = 'weather-icon-meteocon weather-icon-attente';
+        var waitName = document.createElement('span');
+        waitName.className = 'weather-chip__name masthead-weather__name';
+        waitName.textContent = loc.name;
+        var waitTemp = document.createElement('span');
+        waitTemp.className = 'weather-chip__temp masthead-weather__temp';
+        waitTemp.textContent = '–°';
+        wait.appendChild(dot);
+        wait.appendChild(waitName);
+        wait.appendChild(waitTemp);
+        appendWeatherExtras(wait, null, '');
+        host.appendChild(wait);
+        fitWeatherName(waitName, loc.name, host.closest('.masthead-status'));
+      });
+      syncMastheadWeatherDock();
+    }
+
     Promise.all(localities.map(async function (loc) {
-      var cacheKey = 'kiosque-weather:v2:' + loc.name.toLowerCase();
+      var cacheKey = 'kiosque-weather:v3:' + loc.name.toLowerCase();
       try {
         var cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
         if (cached && Date.now() - cached.savedAt < 30 * 60 * 1000) return cached.value;
@@ -1317,7 +1982,7 @@
       var displayName = loc.name;
       // Géocodage Open-Meteo (données OpenStreetMap) si le CMS n’a pas posé de coords.
       if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
-        var geocode = await fetch(
+        var geocode = await weatherFetch(
           'https://geocoding-api.open-meteo.com/v1/search?count=1&language=fr&countryCode=CA&name='
             + encodeURIComponent(loc.name),
         ).then(function (r) { if (!r.ok) throw new Error('geocoding'); return r.json(); });
@@ -1328,14 +1993,18 @@
         displayName = place.name || loc.name;
       }
 
-      var forecast = await fetch(
-        'https://api.open-meteo.com/v1/forecast?current=temperature_2m,weather_code,is_day&timezone=auto&latitude='
+      var forecast = await weatherFetch(
+        // Même appel : conditions actuelles + maximum/minimum du jour et de demain (puce mobile).
+        'https://api.open-meteo.com/v1/forecast?current=temperature_2m,weather_code,is_day'
+          + '&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=2&timezone=auto&latitude='
           + encodeURIComponent(lat) + '&longitude=' + encodeURIComponent(lon),
       ).then(function (r) { if (!r.ok) throw new Error('forecast'); return r.json(); });
 
       var value = {
         name: displayName,
         temperature: Math.round(forecast.current.temperature_2m),
+        today: dailyAt(forecast.daily, 0),
+        tomorrow: dailyAt(forecast.daily, 1),
         code: Number(forecast.current.weather_code),
         isDay: Number(forecast.current.is_day),
         latitude: lat,
@@ -1347,6 +2016,17 @@
       try { localStorage.setItem(cacheKey, JSON.stringify({ savedAt: Date.now(), value: value })); } catch (_) {}
       return value;
     })).then(function (values) {
+      /* Icônes chargées avant la pose : plus de puce sans icône pendant une
+         seconde (au pire 1,5 s d'attente, puis on pose quand même). */
+      var icons = [];
+      values.forEach(function (value) {
+        icons.push(meteoBase + weatherIconName(value.code, value.isDay) + '.svg');
+        if (value.tomorrow) icons.push(meteoBase + weatherIconName(value.tomorrow.code, 1) + '.svg');
+      });
+      return preloadWeatherIcons(icons).then(function () { return values; });
+    }).then(function (values) {
+      if (gen !== weatherPaintGen) return;
+      host.querySelectorAll('.weather-chip, .masthead-weather__city').forEach(function (node) { node.remove(); });
       values.forEach(function (value) {
         // Lien principal = Environnement Canada ; MétéoMédia associé (title + data-).
         var href = value.envcan || value.meteomedia || '#';
@@ -1361,7 +2041,7 @@
           var titleParts = ['Prévisions Environnement Canada — ' + value.name];
           if (value.meteomedia) titleParts.push('MétéoMédia : ' + value.meteomedia);
           chip.title = titleParts.join(' · ');
-          chip.setAttribute('aria-label', 'Météo à ' + value.name + ' — ouvrir Environnement Canada');
+          chip.setAttribute('aria-label', 'Météo à ' + value.name + ', ' + value.temperature + '°' + weatherExtrasTitle(value) + ' — ouvrir Environnement Canada');
           if (value.meteomedia) chip.dataset.meteomedia = value.meteomedia;
           if (value.envcan) chip.dataset.envcan = value.envcan;
           if (Number.isFinite(value.latitude) && Number.isFinite(value.longitude)) {
@@ -1386,29 +2066,18 @@
         chip.appendChild(img);
         chip.appendChild(nameEl);
         chip.appendChild(temp);
+        appendWeatherExtras(chip, value, meteoBase);
         host.appendChild(chip);
-        chip.title = value.name + ' · ' + value.temperature + '°';
-        /* Abréger proprement plutôt que « Saint-L… » : St-, Ste-, puis premier mot. */
-        var abreger = [
-          function (n) { return n.replace(/\bSainte-/g, 'Ste-').replace(/\bSaint-/g, 'St-'); },
-          function (n) { return n.split(/-(?:du|de|des|la|le|sur)-|\s/)[0]; },
-        ];
+        chip.title = value.name + ' · ' + value.temperature + '°' + weatherExtrasTitle(value);
         var status = host.closest('.masthead-status');
-        var ajuster = function () {
-          nameEl.textContent = value.name;
-          var trop = function () {
-            return nameEl.scrollWidth > nameEl.clientWidth + 1 ||
-              (status && status.scrollWidth > status.clientWidth + 1);
-          };
-          for (var k = 0; k < abreger.length && trop(); k++) {
-            nameEl.textContent = abreger[k](nameEl.textContent);
-          }
-        };
+        var ajuster = function () { fitWeatherName(nameEl, value.name, status); };
         ajuster();
         if (window.ResizeObserver && status) new ResizeObserver(ajuster).observe(status);
       });
       syncMastheadWeatherDock();
     }).catch(function () {
+      if (gen !== weatherPaintGen) return;
+      delete host.dataset.weatherReady;
       host.remove();
       var dock = document.getElementById('masthead-weather-dock');
       if (dock && !dock.childNodes.length) dock.hidden = true;
@@ -1424,39 +2093,15 @@
     if (!nav || !btn) return;
 
     var expanded = false;
-    var phoneMq = typeof window.matchMedia === 'function'
-      ? window.matchMedia('(max-width: 720px)')
-      : null;
-
-    function isPhone() {
-      return phoneMq ? phoneMq.matches : window.innerWidth <= 720;
-    }
 
     function sync() {
-      if (!isPhone()) {
-        shell.classList.remove('has-overflow', 'is-expanded');
-        btn.hidden = true;
-        btn.setAttribute('aria-expanded', 'false');
-        expanded = false;
-        return;
-      }
-      /* Mesure avec max-height levée. */
-      var wasExpanded = shell.classList.contains('is-expanded');
-      shell.classList.add('is-expanded');
-      var fullH = nav.scrollHeight;
-      if (!wasExpanded) shell.classList.remove('is-expanded');
-      var oneRow = 44; /* ~2.65rem */
-      var overflow = fullH > oneRow + 8;
-      shell.classList.toggle('has-overflow', overflow);
-      btn.hidden = !overflow;
-      if (!overflow) {
-        expanded = false;
-        shell.classList.remove('is-expanded');
-      } else if (expanded) {
-        shell.classList.add('is-expanded');
-      }
-      btn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-      btn.textContent = expanded ? 'Réduire le menu' : 'Toutes les rubriques';
+      /* Téléphone : toutes les rubriques restent visibles, en ligne de
+         liens à points (parité LE-RADAR). Le bouton d’expansion n’a plus
+         lieu d’être. Ordinateur : inchangé, menu toujours déployé. */
+      shell.classList.remove('has-overflow', 'is-expanded');
+      btn.hidden = true;
+      btn.setAttribute('aria-expanded', 'false');
+      expanded = false;
     }
 
     btn.addEventListener('click', function () {
@@ -1617,12 +2262,13 @@
     var card = cards[cards.length - 1];
     if (!card) return false;
     card.remove();
-    /* Gabarit suite : rôle tail sans image (parité source-view / noImageRoles). */
-    card.classList.remove('article--compact', 'article--brief', 'article--thumb', 'has-image');
+    /* Gabarit suite : rôle tail, vignette conservée s’il y a une photo
+       (parité LE-RADAR et source-view / imageRoles). */
+    card.classList.remove('article--compact', 'article--brief');
     card.classList.add('article--tail');
-    card.querySelectorAll('.article-media').forEach(function (media) {
-      media.remove();
-    });
+    if (!card.querySelector('.article-media')) {
+      card.classList.remove('article--thumb', 'has-image');
+    }
     var tail = ensureNewsTailSection(layout);
     var body = tail.querySelector('.news-tail-body') || tail;
     /* En tête de suite (plus frais que le bas du fil historique). */
@@ -2107,12 +2753,23 @@
 
   function initMastheadStatusDock() {
     syncMastheadWeatherDock();
-    if (!WEATHER_PHONE_MQ) return;
-    var onMq = function () { syncMastheadWeatherDock(); };
-    if (typeof WEATHER_PHONE_MQ.addEventListener === 'function') {
-      WEATHER_PHONE_MQ.addEventListener('change', onMq);
-    } else if (typeof WEATHER_PHONE_MQ.addListener === 'function') {
-      WEATHER_PHONE_MQ.addListener(onMq);
+    var onChange = function () { syncMastheadWeatherDock(); };
+    if (WEATHER_DOCK_MQ) {
+      if (typeof WEATHER_DOCK_MQ.addEventListener === 'function') {
+        WEATHER_DOCK_MQ.addEventListener('change', onChange);
+      } else if (typeof WEATHER_DOCK_MQ.addListener === 'function') {
+        WEATHER_DOCK_MQ.addListener(onChange);
+      }
+    }
+    /* Le palier 1100 px ne suffit pas : une fenêtre bureau étroite, ou
+       plusieurs localités, peut encore manger les boutons. */
+    if (!initMastheadStatusDock._resize) {
+      initMastheadStatusDock._resize = true;
+      var timer = 0;
+      window.addEventListener('resize', function () {
+        window.clearTimeout(timer);
+        timer = window.setTimeout(onChange, 120);
+      }, { passive: true });
     }
   }
 
@@ -2144,12 +2801,29 @@
     var root = document.documentElement;
     if (!banner) {
       root.style.removeProperty('--demo-banner-sticky-h');
+      if (document.body) document.body.style.removeProperty('--demo-banner-sticky-h');
+    } else {
+      var h = Math.ceil(banner.getBoundingClientRect().height);
+      if (h > 0) {
+        /* Sur :root ET body : un jeton posé seulement sur html était
+           écrasé par le fallback 2.85rem déclaré sur body (mobile). */
+        root.style.setProperty('--demo-banner-sticky-h', h + 'px');
+        if (document.body) document.body.style.setProperty('--demo-banner-sticky-h', h + 'px');
+      }
+    }
+    syncRadioStickyOffset();
+  }
+
+  /** Hauteur réelle de la barre radio → scroll-margin des ancres. */
+  function syncRadioStickyOffset() {
+    var root = document.documentElement;
+    var slot = document.querySelector('.radar-radio-slot:not([data-radar-radio="off"])');
+    if (!slot || !document.body.classList.contains('with-radio')) {
+      root.style.removeProperty('--radio-sticky-h');
       return;
     }
-    var h = Math.ceil(banner.getBoundingClientRect().height);
-    if (h > 0) {
-      root.style.setProperty('--demo-banner-sticky-h', h + 'px');
-    }
+    var h = Math.ceil(slot.getBoundingClientRect().height);
+    if (h > 0) root.style.setProperty('--radio-sticky-h', h + 'px');
   }
 
   function initDemoBannerStickyOffset() {
@@ -2158,13 +2832,13 @@
     initDemoBannerStickyOffset._bound = true;
     window.addEventListener('resize', syncDemoBannerStickyOffset, { passive: true });
     if (typeof ResizeObserver === 'function') {
-      var banner = document.querySelector('.demo-banner');
-      if (banner) {
-        try {
-          var ro = new ResizeObserver(function () { syncDemoBannerStickyOffset(); });
-          ro.observe(banner);
-        } catch (_) { /* ignore */ }
-      }
+      try {
+        var ro = new ResizeObserver(function () { syncDemoBannerStickyOffset(); });
+        var banner = document.querySelector('.demo-banner');
+        if (banner) ro.observe(banner);
+        var slot = document.querySelector('.radar-radio-slot');
+        if (slot) ro.observe(slot);
+      } catch (_) { /* ignore */ }
     }
   }
 
@@ -2404,6 +3078,84 @@
 
   window.KiosqueRefreshFeed = refreshFeedChrome;
 
+
+  function initShareAndRevue() {
+    document.addEventListener('click', function (event) {
+      var printBtn = event.target.closest('[data-revue-print]');
+      if (printBtn) {
+        event.preventDefault();
+        window.print();
+        return;
+      }
+      var button = event.target.closest('[data-share]');
+      if (!button) return;
+      var kind = button.getAttribute('data-share');
+      var url = button.getAttribute('data-share-url') || location.href;
+      var title = button.getAttribute('data-share-title') || document.title;
+      if (kind === 'copy') {
+        event.preventDefault();
+        var done = function () {
+          button.textContent = 'Lien copié';
+          window.setTimeout(function () { button.textContent = 'Copier le lien'; }, 2000);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).then(done).catch(function () {
+            window.prompt('Copiez le lien :', url);
+          });
+        } else {
+          window.prompt('Copiez le lien :', url);
+        }
+      }
+      if (kind === 'mastodon') {
+        event.preventDefault();
+        var host = window.prompt('Adresse de votre instance Mastodon (par exemple mastodon.social)');
+        if (!host) return;
+        host = host.replace(/^https?:\/\//, '').replace(/\/.*$/, '').trim();
+        if (!host) return;
+        window.open('https://' + host + '/share?text=' + encodeURIComponent(title + ' ' + url), '_blank', 'noopener');
+      }
+    });
+  }
+
+  function initRecherchePage() {
+    var indexNode = document.getElementById('recherche-index');
+    var results = document.getElementById('recherche-results');
+    var input = document.getElementById('recherche-q');
+    if (!indexNode || !results || !input) return;
+    var items = [];
+    try { items = JSON.parse(indexNode.textContent || '[]'); } catch (error) { items = []; }
+    var apply = function (query) {
+      input.value = query;
+      var needle = query.trim().toLowerCase();
+      if (!needle) {
+        results.innerHTML = '<p class="empty">Écrivez un mot, un titre ou un nom, puis lancez la recherche.</p>';
+        return;
+      }
+      var matches = items.filter(function (item) {
+        return [item.title, item.excerpt, item.authors].join(' ').toLowerCase().indexOf(needle) !== -1;
+      });
+      results.innerHTML = matches.length
+        ? '<ul class="search-results">' + matches.map(function (item) {
+            return '<li><a href="' + String(item.href || '').replace(/"/g, '&quot;') + '">' + String(item.title || '').replace(/</g, '&lt;') + '</a><p>' + String(item.excerpt || '').replace(/</g, '&lt;') + '</p></li>';
+          }).join('') + '</ul>'
+        : '<p class="empty">Aucun article ne correspond à « ' + query.replace(/</g, '&lt;') + ' ».</p>';
+    };
+    var params = new URLSearchParams(location.search);
+    apply(params.get('q') || '');
+    var form = input.form;
+    if (form) {
+      form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        var query = input.value.trim();
+        var url = new URL(form.action || location.pathname, location.href);
+        if (query) url.searchParams.set('q', query);
+        else url.searchParams.delete('q');
+        history.pushState({}, '', url.pathname + url.search);
+        apply(query);
+      });
+    }
+  }
+
   function init() {
     initTheme();
     initDemoBannerStickyOffset();
@@ -2420,6 +3172,8 @@
     initMarquees();
     initPageScrollTop();
     initNewsSearch();
+    initShareAndRevue();
+    initRecherchePage();
     focusSportsTeamFromUrl();
   }
 

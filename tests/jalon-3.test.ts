@@ -66,7 +66,7 @@ test('la barre radio est le module de LE-RADAR, appelé en une ligne', async (t)
   const home = await readFile(path.join(out, 'index.html'), 'utf8');
   const client = await readFile(path.join(out, 'assets/kiosque.js'), 'utf8');
   const theme = await readFile(path.join(out, 'assets/theme.css'), 'utf8');
-  assert.match(home, /<div class="radar-radio-slot" data-station="chyz"><script src="https:\/\/le-radar\.ca\/radio-barre\.js" data-station="chyz" async><\/script><\/div>/);
+  assert.match(home, /<div class="radar-radio-slot" data-station="chyz"><script src="https:\/\/le-radar\.ca\/radio-barre\.js" data-station="chyz" async onerror="this\.parentNode\.dataset\.radarRadio='off'"><\/script><\/div>/);
   assert.match(home, /<body class="[^"]*with-radio/);
   assert.ok(!home.includes('<iframe'), 'aucune iframe radio');
   assert.ok(!home.includes('tuner-embed'));
@@ -74,8 +74,9 @@ test('la barre radio est le module de LE-RADAR, appelé en une ligne', async (t)
   assert.ok(!home.includes('ecoutez.chyz.ca') && !client.includes('ecoutez.chyz.ca'), 'pas de flux copié');
   assert.ok(!client.includes('enhanceRadio'), 'pas de lecteur copié');
   assert.ok(!theme.includes('kiosque-radio'), 'pas de style de lecteur copié');
-  // Replié tant que le module n'a pas dit « ready » : LE-RADAR muet, rien.
+  // Place réservée pendant le chargement ; repliée si LE-RADAR est muet (« off »).
   assert.match(theme, /\.radar-radio-slot \{ display: none; \}/);
+  assert.match(theme, /\.radar-radio-slot:not\(\[data-radar-radio\]\),/);
   assert.match(theme, /\.radar-radio-slot\[data-radar-radio="ready"\]/);
   assert.match(home, /href="\/depot-renomme\/assets\/theme\.css"/);
 });
@@ -128,6 +129,8 @@ test('la vitrine expose le bandeau illustré, les outils et la composition magaz
   assert.ok(sportsTeams.some((t) => t.sex === 'F' || t.sex === 'f'));
   assert.ok(sportsTeams.some((t) => t.sex === 'M' || t.sex === 'm'));
   assert.ok(sportsTeams.some((t) => String(t.sex || '').toLowerCase().includes('mix')));
+  assert.ok(sportsTeams.some((t) => t.officialUrl && /^https?:\/\//.test(String(t.officialUrl))), 'au moins un lien officiel');
+  assert.ok(sportsTeams.some((t) => t.nextGame && t.nextGame.live === true), 'au moins un match En cours');
   assert.equal(sportsTeams[0]?.fictional, true);
 
   const result = await build({ config: config({ editorial: { mode: 'demo-local' } }), bundle: content, outDir: out, logger: silent });
@@ -137,6 +140,16 @@ test('la vitrine expose le bandeau illustré, les outils et la composition magaz
   assert.match(home, /id="masthead-backgrounds"/);
   assert.match(home, /data-weather-localities="/);
   assert.match(home, /data-sports-payload="/);
+  assert.match(home, /id="masthead-sports-strip"/, 'bandeau sports sous la radio');
+  const mastEnd = home.indexOf('</header>');
+  const dockAt = home.indexOf('id="masthead-weather-dock"');
+  const stripAt = home.indexOf('id="masthead-sports-strip"');
+  const navAt = home.indexOf('class="nav-wrap"');
+  assert.ok(mastEnd > 0 && dockAt > 0 && stripAt > 0 && navAt > 0);
+  assert.ok(stripAt > mastEnd, 'cartes sports hors du mât');
+  assert.ok(stripAt > dockAt, 'cartes sports sous le dock météo');
+  assert.ok(stripAt < navAt, 'cartes sports avant la nav et le fil');
+  assert.ok(!home.slice(0, mastEnd).includes('data-sports-payload="'), 'pas de payload sports dans le mât');
   assert.match(home, /Les Élans|Les &Eacute;lans/);
   assert.match(home, /\/sports\//, 'puce sports pointe vers la page résultats');
   const sportsPage = await readFile(path.join(out, 'sports/index.html'), 'utf8');
@@ -149,6 +162,11 @@ test('la vitrine expose le bandeau illustré, les outils et la composition magaz
   assert.match(sportsPage, /sports-result__venue--home|Domicile/, 'domicile visible sur les cartes');
   assert.match(sportsPage, /sports-result__venue--away|Extérieur/, 'extérieur visible sur les cartes');
   assert.match(sportsPage, /sports-panel__sex/, 'pastille F/M/Mixte (parité LE-RADAR)');
+  assert.match(sportsPage, /Féminin/, 'libellé long féminin sur Au tableau');
+  assert.match(sportsPage, /Masculin/, 'libellé long masculin sur Au tableau');
+  assert.match(sportsPage, /Ouvert \/ mixte/, 'libellé long mixte sur Au tableau');
+  assert.match(sportsPage, /Résultats officiels/, 'lien officiel facultatif sur Au tableau');
+  assert.match(sportsPage, /href="https:\/\/rseq\.ca\//, 'URL officielle http(s) rendue');
   assert.match(sportsPage, /sports-result--next/, 'prochain match en tête de carte');
   assert.match(sportsPage, /data-team="/, 'cartes formation portent data-team (deep-link puce)');
   // Première ligne d’un panneau : À venir (ou score récent), pas un vieux résultat en bas.

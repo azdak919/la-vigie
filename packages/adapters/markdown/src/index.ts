@@ -172,6 +172,7 @@ function sportsNextGame(v: unknown): SportsNextGame | undefined {
     home: rec.home === undefined ? undefined : Boolean(rec.home),
     competition: str(rec.competition),
     teamId: str(rec.teamId),
+    live: rec.live === undefined ? undefined : Boolean(rec.live),
   };
 }
 
@@ -197,6 +198,7 @@ function sportsTeam(v: unknown): SportsTeam | undefined {
     sport,
     sportLabel: str(rec.sportLabel),
     sex: str(rec.sex),
+    officialUrl: str(rec.officialUrl) || str(rec.resultsSourceUrl),
     fictional: rec.fictional === undefined ? undefined : Boolean(rec.fictional),
     note: str(rec.note),
     colors: colorsRaw
@@ -334,6 +336,16 @@ function mediaFrom(
     usages: list(raw.usages) as NonNullable<MediaAsset['usages']>,
     mime: str(raw.mime),
     checksum: str(raw.checksum),
+    variants: Array.isArray(raw.variants)
+      ? (raw.variants as unknown[]).flatMap((item) => {
+          if (!item || typeof item !== 'object') return [];
+          const variant = item as Record<string, unknown>;
+          const src = str(variant.src);
+          const width = finiteNumber(variant.width);
+          const height = finiteNumber(variant.height);
+          return src && width && height ? [{ src, width, height }] : [];
+        })
+      : undefined,
     source: attribution,
   };
 }
@@ -514,15 +526,10 @@ export class MarkdownSource implements ContentSource<MarkdownConfig> {
             };
           })()
         : undefined,
-      media: raw.media
-        ? (() => {
-            const media = raw.media as Record<string, unknown>;
-            return {
-              autoStockPhoto: Boolean(media.autoStockPhoto),
-            };
-          })()
-        : undefined,
       founded: str(raw.founded),
+      social: raw.social && typeof raw.social === 'object'
+        ? Object.fromEntries(Object.entries(raw.social as Record<string, unknown>).map(([key, value]) => [key, str(value)]).filter(([, value]) => value))
+        : undefined,
       governance: {
         owner: str(governance.owner) ?? '',
         stewardEntity: str(governance.stewardEntity),
@@ -670,6 +677,7 @@ export class MarkdownSource implements ContentSource<MarkdownConfig> {
         translations: (data.translations as Record<string, string> | undefined) ?? undefined,
         status,
         isDemo: data.demo === undefined ? false : Boolean(data.demo),
+        featured: data.featured === undefined ? undefined : Boolean(data.featured),
         publishedAt: isoDate(data.publishedAt),
         updatedAt,
         canonicalUrl: str(data.canonicalUrl) ?? `${base}/articles/${slug}/`,

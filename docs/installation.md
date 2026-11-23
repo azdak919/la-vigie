@@ -1,16 +1,17 @@
 # Installer un journal KIOSQUE
 
-KIOSQUE est un socle libre et expérimental. Il ne fournit ni hébergement, ni
+KIOSQUE est une plateforme libre et expérimentale. Il ne fournit ni hébergement, ni
 domaine, ni compte d’administration. Chaque journal reste propriétaire et
 responsable de ces ressources. L’accompagnement est bénévole, selon les
 disponibilités.
 
-**Le chemin recommandé est le [guide étudiant](guide-etudiant.md)** : rédaction
-sur un hébergement PHP (serveur du cégep ou hébergeur mutualisé), site sur
-GitHub Pages, sans terminal. Cette page couvre le reste : un journal qui vit
+**Le chemin recommandé est le [guide étudiant](guide-etudiant.md)** : le
+paquet complet (site et rédaction dans un seul ZIP) sur un hébergement PHP
+(serveur du cégep ou hébergeur mutualisé), ou, chemin B, la rédaction sur
+l'hébergement PHP et le site sur GitHub Pages, sans terminal. Cette page couvre le reste : un journal qui vit
 **seulement dans GitHub**, en Markdown, et les réglages communs aux deux
 chemins (Pages, domaine, sauvegardes, passation). Le guide du serveur est
-[adopter le socle](https://github.com/azdak919/le-socle/blob/main/docs/adoption.md).
+[adopter Le Socle](https://github.com/azdak919/le-socle/blob/main/docs/adoption.md).
 
 ## Installation rapide (Markdown seul, sans hébergement)
 
@@ -107,21 +108,22 @@ LE-RADAR les acceptera. Aucun changement du dépôt LE-RADAR n’est requis.
 Le site peut rester sur GitHub Pages pendant que la rédaction vit dans un
 [socle](https://github.com/azdak919/le-socle/blob/main/docs/adoption.md)
 hébergé ailleurs : hébergement PHP (voir le [guide étudiant](guide-etudiant.md)),
-serveur Node, ou Worker Cloudflare sur D1 (ligne de commande obligatoire).
+ou serveur Node pour le développement et les tests. Le site public peut rester
+sur GitHub Pages ou Cloudflare Pages (fichiers statiques).
 
 1. Le configurateur l’écrit pour vous (étape « C’est prêt », « Dans le socle ») :
-   `source: { adapter: 'socle', options: { baseUrl: 'https://<adresse du socle>' } }`
+   `source: { adapter: 'socle', options: { baseUrl: 'https://<adresse de Le Socle>' } }`
    et `editorial: { mode: 'external' }` dans `kiosque.config.ts`.
-2. On écrit dans l’admin du socle (`https://<adresse du socle>/redaction/`).
+2. On écrit dans l’admin du socle (`https://<adresse de Le Socle>/redaction/`).
 3. Le workflow **Publier le journal** lance `kiosque sync` : il lit les
-   articles publiés du socle (`/v1/editorial/snapshot`) et les écrit dans
+   articles publiés de Le Socle (`/v1/editorial/snapshot`) et les écrit dans
    `content/` en Markdown, chaque fichier marqué `miroir: socle`. Le dépôt
-   garde donc toujours une copie complète, lisible sans le socle.
+   garde donc toujours une copie complète, lisible sans Le Socle.
 4. `kiosque build` construit le site depuis ce miroir, comme d’habitude.
 
-Un article retiré du socle quitte le miroir à la synchronisation complète
+Un article retiré de Le Socle quitte le miroir à la synchronisation complète
 suivante ; un fichier écrit à la main dans `content/` n’est jamais retiré.
-Si le socle ne répond pas, le site reste en ligne, tel qu’il était.
+Si Le Socle ne répond pas, le site reste en ligne, tel qu’il était.
 
 ## Domaine personnalisé
 

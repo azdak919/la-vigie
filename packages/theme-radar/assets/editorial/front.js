@@ -45,7 +45,7 @@ async function render(push = false) {
   try {
     if (typeof window.KiosqueRefreshMasthead === 'function') window.KiosqueRefreshMasthead();
   } catch (_) {}
-  const result = renderRoute(bundle, config.publicBasePath, location.pathname, articleBody);
+  const result = renderRoute(bundle, config.publicBasePath, location.pathname, articleBody, location.search);
   if (!result) return;
   if (push) history.pushState({}, '', location.pathname);
   document.title = result.title;
@@ -101,7 +101,9 @@ function showFailure(error) {
     notice.className = 'editorial-failure';
     document.body.prepend(notice);
   }
-  notice.innerHTML = `<strong>Les données locales ne peuvent pas être ouvertes.</strong> Le journal statique reste disponible. <button type="button">Réessayer</button>`;
+  notice.innerHTML = config?.mode === 'socle-vivant'
+    ? `<strong>Le journal ne répond pas pour l’instant.</strong> Réessayez dans un moment. <button type="button">Réessayer</button>`
+    : `<strong>Les données locales ne peuvent pas être ouvertes.</strong> Le journal statique reste disponible. <button type="button">Réessayer</button>`;
   notice.querySelector('button').onclick = () => location.reload();
 }
 

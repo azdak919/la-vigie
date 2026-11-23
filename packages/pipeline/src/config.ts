@@ -21,8 +21,14 @@ export interface DeployConfig {
    * Laisser vide dès qu'un domaine personnalisé est en place.
    */
   basePath?: string;
-  /** Domaine personnalisé écrit dans dist/CNAME. */
+  /** Domaine personnalisé écrit dans dist/CNAME (sans schéma). */
   cname?: string;
+  /**
+   * Origine publique du site, sans barre finale.
+   * Canonical, Open Graph, sitemap et manifeste s’en servent.
+   * Ex. 'https://lequorum.ca'. Vide : l’adresse se déduit au build.
+   */
+  origin?: string;
 }
 
 export interface CmsConfig {
@@ -47,9 +53,15 @@ export interface KiosqueConfig {
 
   /** Interface de rédaction proposée par le site généré. */
   editorial?: {
-    mode: 'demo-local' | 'git-sveltia' | 'external';
+    /** 'socle-vivant' : paquet complet, le site se dessine depuis le socle de la même installation. */
+    mode: 'demo-local' | 'socle-vivant' | 'git-sveltia' | 'external';
     /** Réservé aux intégrations futures, par exemple PocketBase. */
     externalBackend?: string;
+    /**
+     * Adresse publique de l’espace de rédaction, si ce n’est pas `<basePath>/redaction/`.
+     * Réservé à la vitrine : la démo du Quorum pointe vers `/admin/` (ou `/…/admin/`).
+     */
+    redactionHref?: string;
   };
 
   /** Quel backend éditorial alimente le miroir. */
@@ -67,6 +79,14 @@ export interface KiosqueConfig {
 
   /** false retire du site les articles portant `demo: true`, sans les effacer. */
   demoContent?: boolean;
+
+  /**
+   * Accès explicite à l’espace de rédaction (pastille dans le mât et
+   * libellé du pied), réservé à la démonstration. Désactivé par défaut :
+   * un vrai journal n’a jamais ce bouton, même si le thème est le même.
+   * N’a d’effet qu’avec `editorial.mode === 'demo-local'`.
+   */
+  demoEditorialEntry?: boolean;
 
   /** Nombre d'articles dans le flux Atom. */
   feedLimit?: number;

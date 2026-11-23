@@ -17,6 +17,7 @@
 
 import { stringify } from 'yaml';
 
+import { SOCIAL_NETWORKS } from '../../theme-radar/src/social.js';
 import { CMS_STATUSES, type ContentBundle, type Publication } from '../../core/src/model.ts';
 import { normalizeBasePath, type KiosqueConfig } from './config.ts';
 
@@ -135,6 +136,7 @@ export function buildCmsConfig(options: CmsConfigOptions): Record<string, unknow
             { name: 'masthead', label: 'Mât', widget: 'object', required: false, fields: [
               { name: 'backgrounds', label: 'Arrière-plans', widget: 'object', fields: [
                 { name: 'enabled', label: 'Afficher les arrière-plans', widget: 'boolean', default: true },
+                { name: 'randomOrder', label: 'Ordre aléatoire', widget: 'boolean', default: true, hint: 'Une photo au hasard à chaque visite. Désactivé : toujours la première de la liste.' },
                 { name: 'images', label: 'Images locales', widget: 'list', required: false, fields: mediaFields() },
               ] },
               { name: 'weather', label: 'Météo', widget: 'object', fields: [
@@ -165,7 +167,13 @@ export function buildCmsConfig(options: CmsConfigOptions): Record<string, unknow
                   { name: 'institution', label: 'Établissement', widget: 'string', required: false },
                   { name: 'sport', label: 'Sport (slug)', widget: 'string', required: true },
                   { name: 'sportLabel', label: 'Libellé du sport', widget: 'string', required: false },
-                  { name: 'sex', label: 'Catégorie (F / M / mixte)', widget: 'string', required: false },
+                  { name: 'sex', label: 'Genre (Féminin / Masculin / Mixte)', widget: 'select', required: false, options: [
+                    { label: 'Non précisé', value: '' },
+                    { label: 'Féminin', value: 'F' },
+                    { label: 'Masculin', value: 'M' },
+                    { label: 'Mixte', value: 'mixte' },
+                  ] },
+                  { name: 'officialUrl', label: 'Lien officiel des résultats', widget: 'string', required: false },
                   { name: 'fictional', label: 'Équipe fictive (démo)', widget: 'boolean', default: false },
                   { name: 'note', label: 'Note', widget: 'text', required: false },
                   { name: 'colors', label: 'Couleurs', widget: 'object', required: false, fields: [
@@ -192,6 +200,7 @@ export function buildCmsConfig(options: CmsConfigOptions): Record<string, unknow
                     { name: 'opponentInstitution', label: 'Établissement adverse', widget: 'string', required: false },
                     { name: 'home', label: 'À domicile', widget: 'boolean', required: false },
                     { name: 'competition', label: 'Compétition', widget: 'string', required: false },
+                    { name: 'live', label: 'En cours', widget: 'boolean', required: false },
                   ] },
                 ] },
               ] },
@@ -210,17 +219,12 @@ export function buildCmsConfig(options: CmsConfigOptions): Record<string, unknow
               { name: 'theme', label: 'Ancien thème', widget: 'hidden', required: false },
               { name: 'position', label: 'Ancienne position', widget: 'hidden', required: false },
             ] },
-            { name: 'media', label: 'Photos d’articles', widget: 'object', required: false, fields: [
-              {
-                name: 'autoStockPhoto',
-                label: 'Proposer une photo libre si aucune n’est fournie',
-                widget: 'boolean',
-                default: false,
-                hint: 'Algo LE-RADAR : banque du journal puis Openverse / Wikimedia Commons selon le titre et le texte. Une photo soumise manuellement n’est jamais remplacée.',
-              },
-            ] },
             { name: 'founded', label: 'Année de fondation', widget: 'string', required: false },
             { name: 'license', label: 'Licence', widget: 'string', required: false },
+            { name: 'social', label: 'Réseaux sociaux', widget: 'object', required: false, collapsed: true, hint: 'Adresse complète de chaque page ; un réseau laissé vide n’est pas affiché.', fields: SOCIAL_NETWORKS.map((network) => ({
+              name: network.id, label: network.name, widget: 'string', required: false, hint: `Exemple : ${network.example}`,
+              ...(network.pattern ? { pattern: [`^${network.pattern}$`, network.error] } : {}),
+            })) },
             { name: 'governance', label: 'Gouvernance', widget: 'object', fields: [
               { name: 'owner', label: 'Organisation propriétaire', widget: 'string' },
               { name: 'stewardEntity', label: 'Entité permanente', widget: 'string', required: false },

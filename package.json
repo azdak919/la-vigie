@@ -1,9 +1,9 @@
 {
   "name": "kiosque",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
-  "description": "Le Kiosque — socle libre pour les journaux étudiants",
-  "license": "GPL-2.0-only",
+  "description": "Le Kiosque — plateforme libre pour les journaux étudiants",
+  "license": "AGPL-3.0-or-later",
   "type": "module",
   "bin": {
     "kiosque": "packages/pipeline/src/cli.ts"
@@ -22,7 +22,6 @@
     "typecheck": "tsc --noEmit",
     "radar:reference:check": "node tools/check-radar-source-view.mjs",
     "demo:photos": "node tools/seed-demo-photos.mjs",
-    "demo:match-photos": "node tools/match-article-photos.mjs",
     "demo:portraits": "node tools/seed-author-portraits.mjs",
     "ui": "node tools/build-ui.mjs"
   },
@@ -30,7 +29,7 @@
     "node": ">=22.18"
   },
   "dependencies": {
-    "le-socle": "github:azdak919/le-socle#fd6f5cdd950d9ccf332d2be4dc910db25f194a00",
+    "le-socle": "github:azdak919/le-socle#69f22348466b2ca6452d4b8a5d2741c142eb94cc",
     "marked": "^18.2.0",
     "yaml": "^2.9.1"
   },
